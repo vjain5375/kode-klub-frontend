@@ -174,24 +174,78 @@ export function Hero() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.1 }}
-                        className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-2"
+                        className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-4"
                     >
                         <span className="text-neutral-200">Master Coding</span>{" "}
                         <br />
                         <span className="text-neutral-200">with </span>
-                        <span className="text-primary">Kode Club</span>
+                        <span className="bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-500 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]">
+                            Kode Club
+                        </span>
                     </motion.h1>
 
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.15 }}
-                        className="text-2xl md:text-4xl font-bold tracking-tight mb-8"
-                    >
-                        <span className="text-neutral-400">Code.</span>{" "}
-                        <span className="text-primary/90">Compete.</span>{" "}
-                        <span className="text-neutral-400">Conquer.</span>
-                    </motion.div>
+                    <div className="text-2xl md:text-3xl font-mono font-medium tracking-tight mb-10 h-10 flex items-center justify-center gap-1">
+                        {/* Typewriter Effect Container */}
+                        <motion.span
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 0.1, staggerChildren: 0.1 }}
+                            className="flex items-center gap-3"
+                        >
+                            {/* "Code." */}
+                            <span className="flex">
+                                {"Code.".split("").map((char, i) => (
+                                    <motion.span
+                                        key={`code-${i}`}
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={{ duration: 0, delay: i * 0.1 + 0.5 }} // Start after 0.5s
+                                        className="text-neutral-300"
+                                    >
+                                        {char}
+                                    </motion.span>
+                                ))}
+                            </span>
+
+                            {/* "Compete." */}
+                            <span className="flex">
+                                {"Compete.".split("").map((char, i) => (
+                                    <motion.span
+                                        key={`compete-${i}`}
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={{ duration: 0, delay: i * 0.1 + 1.2 }} // Start after Code. finishes
+                                        className="text-blue-400 font-bold drop-shadow-md"
+                                    >
+                                        {char}
+                                    </motion.span>
+                                ))}
+                            </span>
+
+                            {/* "Conquer." */}
+                            <span className="flex">
+                                {"Conquer.".split("").map((char, i) => (
+                                    <motion.span
+                                        key={`conquer-${i}`}
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={{ duration: 0, delay: i * 0.1 + 2.2 }} // Start after Compete. finishes
+                                        className="text-neutral-300"
+                                    >
+                                        {char}
+                                    </motion.span>
+                                ))}
+                            </span>
+                        </motion.span>
+
+                        {/* Blinking Cursor */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: [0, 1, 0] }}
+                            transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+                            className="w-[2px] h-6 md:h-7 bg-blue-500 ml-1"
+                        />
+                    </div>
 
                     <motion.p
                         initial={{ opacity: 0, y: 20 }}
