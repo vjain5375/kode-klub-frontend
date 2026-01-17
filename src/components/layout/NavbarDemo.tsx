@@ -19,6 +19,7 @@ import { IconSearch } from "@tabler/icons-react";
 export function NavbarDemo() {
     const navItems = [
         { name: "DPPs", link: "/dpp" },
+        { name: "Quiz", link: "/quiz" },
         { name: "Compiler", link: "/compiler" },
         { name: "Leaderboard", link: "/leaderboard" },
         { name: "Resources", link: "/resources" },
