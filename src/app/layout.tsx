@@ -8,6 +8,7 @@ import { GlobalVideoBackground } from "@/components/layout/GlobalVideoBackground
 import { cn } from "@/lib/utils";
 import { SmoothScroll } from "@/components/motion/smooth-scroll";
 import { CommandBar } from "@/components/features/navigation/CommandBar";
+import { AuthProvider } from "@/context/AuthContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -35,15 +36,17 @@ export default function RootLayout({
                     enableSystem
                     disableTransitionOnChange
                 >
-                    <GlobalVideoBackground />
-                    <SmoothScroll>
-                        <div className="relative z-10 flex min-h-screen flex-col">
-                            <NavbarDemo />
-                            <main className="flex-1 pt-16">{children}</main>
-                            <Footer />
-                            <CommandBar />
-                        </div>
-                    </SmoothScroll>
+                    <AuthProvider>
+                        <GlobalVideoBackground />
+                        <SmoothScroll>
+                            <div className="relative z-10 flex min-h-screen flex-col">
+                                <NavbarDemo />
+                                <main className="flex-1 pt-16">{children}</main>
+                                <Footer />
+                                <CommandBar />
+                            </div>
+                        </SmoothScroll>
+                    </AuthProvider>
                 </ThemeProvider>
             </body>
         </html>

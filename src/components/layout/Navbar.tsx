@@ -10,17 +10,22 @@ import {
     MobileNavToggle,
     MobileNavMenu,
 } from "@/components/ui/resizable-navbar";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { IconSearch } from "@tabler/icons-react";
+import { IconSearch, IconUser, IconLogout } from "@tabler/icons-react";
+import { useAuth } from "@/context/AuthContext";
+import Link from "next/link";
 
 export function NavbarDemo() {
     const pathname = usePathname();
+    const router = useRouter();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const { user, loading, logout } = useAuth();
 
     const navItems = [
         { name: "DPPs", link: "/dpp" },
         { name: "Compiler", link: "/compiler" },
+        { name: "Quiz", link: "/quiz" },
         { name: "Leaderboard", link: "/leaderboard" },
         { name: "Resources", link: "/resources" },
     ];
@@ -29,6 +34,11 @@ export function NavbarDemo() {
         if (typeof window !== "undefined" && (window as any).__openCommandBar) {
             (window as any).__openCommandBar();
         }
+    };
+
+    const handleLogout = () => {
+        logout();
+        router.push('/');
     };
 
     return (
@@ -75,19 +85,43 @@ export function NavbarDemo() {
                             </kbd>
                         </button>
 
-                        <NavbarButton
-                            variant="secondary"
-                            className="text-neutral-300 hover:text-white"
-                        >
-                            Sign In
-                        </NavbarButton>
+                        {loading ? (
+                            <div className="w-20 h-8 bg-neutral-800 rounded animate-pulse" />
+                        ) : user ? (
+                            <>
+                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-500/30">
+                                    <IconUser className="w-4 h-4 text-green-400" />
+                                    <span className="text-green-400 text-sm max-w-[120px] truncate">
+                                        {user.name}
+                                    </span>
+                                </div>
+                                <button
+                                    onClick={handleLogout}
+                                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-all text-sm"
+                                >
+                                    <IconLogout className="w-4 h-4" />
+                                    <span className="hidden lg:inline">Logout</span>
+                                </button>
+                            </>
+                        ) : (
+                            <Link href="/login">
+                                <NavbarButton
+                                    variant="secondary"
+                                    className="text-neutral-300 hover:text-white"
+                                >
+                                    Sign In
+                                </NavbarButton>
+                            </Link>
+                        )}
 
-                        <NavbarButton
-                            variant="primary"
-                            className="font-medium shadow-lg"
-                        >
-                            Run Code
-                        </NavbarButton>
+                        <Link href="/compiler">
+                            <NavbarButton
+                                variant="primary"
+                                className="font-medium shadow-lg"
+                            >
+                                Run Code
+                            </NavbarButton>
+                        </Link>
                     </div>
                 </NavBody>
 

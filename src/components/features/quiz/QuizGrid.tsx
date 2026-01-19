@@ -1,69 +1,101 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { IconBrain, IconCode, IconDatabase, IconWorld, IconChartBar, IconLock } from "@tabler/icons-react";
+import { IconBrain, IconLoader2, IconAlertCircle, IconRefresh } from "@tabler/icons-react";
 import Link from "next/link";
-
-const quizCategories = [
-    {
-        title: "Algorithms",
-        description: "Master sorting, searching, and algorithmic thinking",
-        icon: IconBrain,
-        quizCount: 12,
-        difficulty: "Medium",
-        color: "from-blue-500 to-cyan-500",
-        available: true,
-    },
-    {
-        title: "Data Structures",
-        description: "Arrays, linked lists, trees, graphs, and more",
-        icon: IconDatabase,
-        quizCount: 15,
-        difficulty: "Hard",
-        color: "from-purple-500 to-pink-500",
-        available: true,
-    },
-    {
-        title: "Web Development",
-        description: "HTML, CSS, JavaScript, and modern frameworks",
-        icon: IconWorld,
-        quizCount: 20,
-        difficulty: "Easy",
-        color: "from-green-500 to-emerald-500",
-        available: true,
-    },
-    {
-        title: "Programming Basics",
-        description: "Syntax, loops, conditions, and fundamentals",
-        icon: IconCode,
-        quizCount: 18,
-        difficulty: "Easy",
-        color: "from-orange-500 to-red-500",
-        available: true,
-    },
-    {
-        title: "System Design",
-        description: "Architecture patterns and scalability",
-        icon: IconChartBar,
-        quizCount: 8,
-        difficulty: "Hard",
-        color: "from-indigo-500 to-purple-500",
-        available: false,
-    },
-];
+import { fetchActiveQuizzes } from "@/lib/quiz/api";
+import type { QuizListItem } from "@/lib/quiz/types";
 
 export function QuizGrid() {
+    const [quizzes, setQuizzes] = useState<QuizListItem[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const loadQuizzes = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const data = await fetchActiveQuizzes();
+            setQuizzes(data);
+        } catch (err) {
+            setError("Failed to load quizzes. Make sure the backend is running.");
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadQuizzes();
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-16">
+                <div className="text-center">
+                    <IconLoader2 className="w-10 h-10 text-blue-400 animate-spin mx-auto mb-4" />
+                    <p className="text-neutral-400">Loading quizzes...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex items-center justify-center py-16">
+                <div className="text-center p-8 rounded-2xl bg-black/40 backdrop-blur-xl border border-red-500/30 max-w-md">
+                    <IconAlertCircle className="w-10 h-10 text-red-400 mx-auto mb-4" />
+                    <p className="text-neutral-300 mb-4">{error}</p>
+                    <button
+                        onClick={loadQuizzes}
+                        className="flex items-center gap-2 mx-auto px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-all"
+                    >
+                        <IconRefresh className="w-4 h-4" />
+                        Retry
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    if (quizzes.length === 0) {
+        return (
+            <div className="flex items-center justify-center py-16">
+                <div className="text-center p-8 rounded-2xl bg-black/40 backdrop-blur-xl border border-neutral-800 max-w-md">
+                    <IconBrain className="w-10 h-10 text-neutral-600 mx-auto mb-4" />
+                    <h3 className="text-xl font-bold text-white mb-2">No Quizzes Available</h3>
+                    <p className="text-neutral-400">
+                        Check back later for new quizzes!
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {quizCategories.map((category, index) => (
-                <QuizCard key={category.title} category={category} index={index} />
+            {quizzes.map((quiz, index) => (
+                <QuizCard key={quiz._id} quiz={quiz} index={index} />
             ))}
         </div>
     );
 }
 
-function QuizCard({ category, index }: { category: typeof quizCategories[0]; index: number }) {
-    const Icon = category.icon;
+function QuizCard({ quiz, index }: { quiz: QuizListItem; index: number }) {
+    const colors = [
+        "from-blue-500 to-cyan-500",
+        "from-purple-500 to-pink-500",
+        "from-green-500 to-emerald-500",
+        "from-orange-500 to-red-500",
+        "from-indigo-500 to-purple-500",
+    ];
+    const color = colors[index % colors.length];
+
+    const formatDate = (dateString: string) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    };
 
     return (
         <motion.div
@@ -72,60 +104,43 @@ function QuizCard({ category, index }: { category: typeof quizCategories[0]; ind
             transition={{ delay: index * 0.1 }}
             className="group relative"
         >
-            <Link href={category.available ? `/quiz/${category.title.toLowerCase().replace(" ", "-")}` : "#"}>
+            <Link href={`/quiz/${quiz._id}`}>
                 <div
                     className={`
-                        relative overflow-hidden rounded-2xl p-6 h-full min-h-[240px]
+                        relative overflow-hidden rounded-2xl p-6 h-full min-h-[200px]
                         bg-black/40 backdrop-blur-xl border border-neutral-800
                         transition-all duration-300
-                        ${category.available
-                            ? "hover:border-blue-500/50 hover:shadow-[0_0_30px_rgba(59,130,246,0.15)] cursor-pointer"
-                            : "opacity-60 cursor-not-allowed"
-                        }
+                        hover:border-blue-500/50 hover:shadow-[0_0_30px_rgba(59,130,246,0.15)] cursor-pointer
                     `}
                 >
                     {/* Background Gradient */}
-                    <div className={`absolute inset-0 bg-gradient-to-br ${category.color} opacity-5 group-hover:opacity-10 transition-opacity`} />
-
-                    {/* Lock Icon for unavailable quizzes */}
-                    {!category.available && (
-                        <div className="absolute top-4 right-4">
-                            <IconLock className="w-5 h-5 text-neutral-600" />
-                        </div>
-                    )}
+                    <div className={`absolute inset-0 bg-gradient-to-br ${color} opacity-5 group-hover:opacity-10 transition-opacity`} />
 
                     <div className="relative z-10 flex flex-col h-full">
                         {/* Icon */}
                         <div className={`
                             mb-4 inline-flex h-14 w-14 items-center justify-center rounded-xl
-                            bg-gradient-to-br ${category.color} bg-opacity-20
+                            bg-gradient-to-br ${color} bg-opacity-20
                             group-hover:scale-110 transition-transform
                         `}>
-                            <Icon className="w-7 h-7 text-white" />
+                            <IconBrain className="w-7 h-7 text-white" />
                         </div>
 
                         {/* Title */}
                         <h3 className="text-xl font-bold text-white mb-2 group-hover:text-blue-400 transition-colors">
-                            {category.title}
+                            {quiz.title}
                         </h3>
 
-                        {/* Description */}
-                        <p className="text-sm text-neutral-400 mb-4 leading-relaxed flex-grow">
-                            {category.description}
-                        </p>
+                        {/* Spacer */}
+                        <div className="flex-grow" />
 
                         {/* Stats */}
-                        <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center justify-between text-xs mt-4">
                             <span className="px-2 py-1 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                                {category.quizCount} Quizzes
+                                {quiz.questionCount} Questions
                             </span>
-                            <span className={`
-                                px-2 py-1 rounded-md
-                                ${category.difficulty === "Easy" && "bg-green-500/10 text-green-400 border border-green-500/20"}
-                                ${category.difficulty === "Medium" && "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20"}
-                                ${category.difficulty === "Hard" && "bg-red-500/10 text-red-400 border border-red-500/20"}
-                            `}>
-                                {category.difficulty}
+                            <span className="text-neutral-500">
+                                {formatDate(quiz.createdAt)}
                             </span>
                         </div>
                     </div>

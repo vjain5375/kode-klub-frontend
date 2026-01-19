@@ -14,9 +14,13 @@ import {
 import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { IconSearch } from "@tabler/icons-react";
+import { IconSearch, IconUser, IconLogout, IconSettings } from "@tabler/icons-react";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 
 export function NavbarDemo() {
+    const { user, loading, logout } = useAuth();
+    const router = useRouter();
     const navItems = [
         { name: "DPPs", link: "/dpp" },
         { name: "Quiz", link: "/quiz" },
@@ -31,6 +35,11 @@ export function NavbarDemo() {
         if (typeof window !== "undefined" && (window as any).__openCommandBar) {
             (window as any).__openCommandBar();
         }
+    };
+
+    const handleLogout = () => {
+        logout();
+        router.push('/');
     };
 
     return (
@@ -55,14 +64,44 @@ export function NavbarDemo() {
                             </kbd>
                         </button>
 
-                        <Link href="/login">
-                            <NavbarButton
-                                variant="secondary"
-                                className="text-neutral-200 hover:text-white hover:bg-white/10 border border-transparent hover:border-white/10"
-                            >
-                                Sign In
-                            </NavbarButton>
-                        </Link>
+                        {loading ? (
+                            <div className="w-20 h-8 bg-white/10 rounded animate-pulse" />
+                        ) : user ? (
+                            <>
+                                {user.role === 'admin' && (
+                                    <Link href="/admin">
+                                        <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 transition-all text-sm text-purple-400">
+                                            <IconSettings className="w-4 h-4" />
+                                            <span className="hidden lg:inline">Admin</span>
+                                        </button>
+                                    </Link>
+                                )}
+                                <Link href="/dashboard">
+                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-green-500/20 border border-green-500/40 cursor-pointer hover:bg-green-500/30 transition-colors">
+                                        <IconUser className="w-4 h-4 text-green-400" />
+                                        <span className="text-green-300 text-sm max-w-[120px] truncate">
+                                            {user.name}
+                                        </span>
+                                    </div>
+                                </Link>
+                                <button
+                                    onClick={handleLogout}
+                                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500/20 border border-red-500/40 text-red-300 hover:bg-red-500/30 transition-all text-sm"
+                                >
+                                    <IconLogout className="w-4 h-4" />
+                                    <span className="hidden lg:inline">Logout</span>
+                                </button>
+                            </>
+                        ) : (
+                            <Link href="/login">
+                                <NavbarButton
+                                    variant="secondary"
+                                    className="text-neutral-200 hover:text-white hover:bg-white/10 border border-transparent hover:border-white/10"
+                                >
+                                    Sign In
+                                </NavbarButton>
+                            </Link>
+                        )}
 
                         <Link href="/compiler">
                             <NavbarButton variant="primary" className="font-medium shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90 text-white border-0">
