@@ -17,7 +17,7 @@ const commands = [
     { id: "compiler", label: "Open Compiler", icon: IconTerminal2, href: "/compiler", shortcut: "G C" },
     { id: "dpp", label: "Today's DPP", icon: IconCode, href: "/dpp", shortcut: "G D" },
     { id: "leaderboard", label: "View Leaderboard", icon: IconTrophy, href: "/leaderboard", shortcut: "G L" },
-    { id: "github", label: "GitHub Repo", icon: IconBrandGithub, href: "https://github.com", shortcut: "G G" },
+    { id: "github", label: "GitHub Repo", icon: IconBrandGithub, href: "https://github.com/vjain5375?tab=repositories", shortcut: "G G" },
 ];
 
 // Context to control command bar from outside

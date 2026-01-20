@@ -14,7 +14,7 @@ export function FooterSocialDock() {
         {
             title: "GitHub",
             icon: <IconBrandGithub className="h-full w-full" />,
-            href: "https://github.com/kodeclub-rgipt",
+            href: "https://github.com/vjain5375?tab=repositories",
         },
         {
             title: "Instagram",
