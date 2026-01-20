@@ -119,29 +119,27 @@ export function QuizResults({ quizId, result, timeTaken, quiz, userAnswers }: Qu
                             Back to Quizzes
                         </button>
                     </Link>
-                    <button
-                        onClick={() => window.location.reload()}
-                        className="flex items-center gap-2 px-6 py-3 rounded-xl font-medium bg-blue-500 text-white hover:bg-blue-600 transition-all"
-                    >
-                        <IconRefresh className="w-5 h-5" />
-                        Try Again
-                    </button>
                 </div>
             </motion.div>
 
-            {/* Detailed Review Section */}
+            {/* Answer Review Section */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="p-6 rounded-2xl bg-black/40 backdrop-blur-xl border border-neutral-800"
+                className="rounded-2xl border border-white/10 overflow-hidden bg-gradient-to-b from-neutral-900/90 to-neutral-950/90 backdrop-blur-xl"
             >
-                <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                    <IconAlertCircle className="w-6 h-6 text-blue-400" />
-                    Detailed Review
-                </h3>
+                {/* Header */}
+                <div className="px-6 py-5 border-b border-white/10 bg-gradient-to-r from-blue-500/10 to-transparent">
+                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                        <IconAlertCircle className="w-5 h-5 text-blue-400" />
+                        Answer Review
+                    </h3>
+                    <p className="text-neutral-400 text-sm mt-1">Review your answers with explanations</p>
+                </div>
 
-                <div className="space-y-6">
+                {/* Questions List */}
+                <div className="p-4 space-y-4">
                     {quiz.quizData.questions.map((question: any, index: number) => {
                         const userAnswer = userAnswers[index];
                         const correctAnswer = question.correctAnswer;
@@ -151,73 +149,74 @@ export function QuizResults({ quizId, result, timeTaken, quiz, userAnswers }: Qu
                         return (
                             <div
                                 key={index}
-                                className={`p-5 rounded-xl border ${isCorrect
-                                        ? "bg-green-500/5 border-green-500/30"
-                                        : wasAnswered
-                                            ? "bg-red-500/5 border-red-500/30"
-                                            : "bg-neutral-800/30 border-neutral-700"
+                                className={`rounded-xl p-5 border ${isCorrect
+                                    ? "bg-green-500/5 border-green-500/20"
+                                    : wasAnswered
+                                        ? "bg-red-500/5 border-red-500/20"
+                                        : "bg-neutral-800/30 border-neutral-700/50"
                                     }`}
                             >
                                 {/* Question Header */}
                                 <div className="flex items-start gap-3 mb-4">
-                                    <span className={`
-                                        flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm
-                                        ${isCorrect ? "bg-green-500 text-white" : wasAnswered ? "bg-red-500 text-white" : "bg-neutral-700 text-neutral-300"}
-                                    `}>
+                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm flex-shrink-0 ${isCorrect
+                                        ? "bg-green-500 text-white"
+                                        : wasAnswered
+                                            ? "bg-red-500 text-white"
+                                            : "bg-neutral-700 text-neutral-300"
+                                        }`}>
                                         {index + 1}
-                                    </span>
+                                    </div>
                                     <div className="flex-1">
-                                        <p className="text-white font-medium mb-2">{question.question}</p>
-                                        {question.image && (
-                                            <img src={question.image} alt="Question" className="rounded-lg max-w-md mb-3" />
+                                        <p className="text-white font-medium">{question.question}</p>
+                                    </div>
+                                    <div className={`flex items-center gap-1.5 text-sm font-medium ${isCorrect ? "text-green-400" : wasAnswered ? "text-red-400" : "text-neutral-500"
+                                        }`}>
+                                        {isCorrect ? (
+                                            <><IconCheck className="w-4 h-4" /> Correct</>
+                                        ) : wasAnswered ? (
+                                            <><IconX className="w-4 h-4" /> Wrong</>
+                                        ) : (
+                                            "Skipped"
                                         )}
                                     </div>
-                                    {isCorrect ? (
-                                        <IconCheck className="w-6 h-6 text-green-400 flex-shrink-0" />
-                                    ) : wasAnswered ? (
-                                        <IconX className="w-6 h-6 text-red-400 flex-shrink-0" />
-                                    ) : (
-                                        <IconAlertCircle className="w-6 h-6 text-neutral-500 flex-shrink-0" />
-                                    )}
                                 </div>
 
-                                {/* Options */}
-                                <div className="space-y-2 mb-4">
+                                {/* Options Grid */}
+                                <div className="grid gap-2 mb-4">
                                     {question.options.map((option: string, optIdx: number) => {
                                         const isUserAnswer = userAnswer === optIdx;
                                         const isCorrectOption = correctAnswer === optIdx;
 
+                                        let optionStyle = "bg-neutral-800/50 border-neutral-700/50 text-neutral-400";
+                                        let letterStyle = "bg-neutral-700 text-neutral-300";
+
+                                        if (isCorrectOption) {
+                                            optionStyle = "bg-green-500/10 border-green-500/30 text-green-300";
+                                            letterStyle = "bg-green-500 text-white";
+                                        } else if (isUserAnswer) {
+                                            optionStyle = "bg-red-500/10 border-red-500/30 text-red-300";
+                                            letterStyle = "bg-red-500 text-white";
+                                        }
+
                                         return (
                                             <div
                                                 key={optIdx}
-                                                className={`p-3 rounded-lg border ${isCorrectOption
-                                                        ? "bg-green-500/10 border-green-500/50"
-                                                        : isUserAnswer
-                                                            ? "bg-red-500/10 border-red-500/50"
-                                                            : "bg-neutral-800/30 border-neutral-700"
-                                                    }`}
+                                                className={`flex items-center gap-3 px-4 py-3 rounded-lg border transition-all ${optionStyle}`}
                                             >
-                                                <div className="flex items-center gap-3">
-                                                    <span className={`
-                                                        w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold
-                                                        ${isCorrectOption ? "bg-green-500 text-white" : isUserAnswer ? "bg-red-500 text-white" : "bg-neutral-700 text-neutral-300"}
-                                                    `}>
-                                                        {String.fromCharCode(65 + optIdx)}
+                                                <span className={`w-7 h-7 rounded-md text-xs font-bold flex items-center justify-center ${letterStyle}`}>
+                                                    {String.fromCharCode(65 + optIdx)}
+                                                </span>
+                                                <span className="flex-1">{option}</span>
+                                                {isCorrectOption && (
+                                                    <span className="text-xs font-semibold text-green-400 bg-green-500/20 px-2 py-1 rounded">
+                                                        ✓ Correct
                                                     </span>
-                                                    <span className={`flex-1 ${isCorrectOption ? "text-green-300" : isUserAnswer ? "text-red-300" : "text-neutral-400"}`}>
-                                                        {option}
+                                                )}
+                                                {isUserAnswer && !isCorrectOption && (
+                                                    <span className="text-xs font-semibold text-red-400 bg-red-500/20 px-2 py-1 rounded">
+                                                        Your Answer
                                                     </span>
-                                                    {isCorrectOption && (
-                                                        <span className="text-xs font-medium text-green-400 bg-green-500/20 px-2 py-1 rounded">
-                                                            Correct
-                                                        </span>
-                                                    )}
-                                                    {isUserAnswer && !isCorrectOption && (
-                                                        <span className="text-xs font-medium text-red-400 bg-red-500/20 px-2 py-1 rounded">
-                                                            Your Answer
-                                                        </span>
-                                                    )}
-                                                </div>
+                                                )}
                                             </div>
                                         );
                                     })}
@@ -225,16 +224,11 @@ export function QuizResults({ quizId, result, timeTaken, quiz, userAnswers }: Qu
 
                                 {/* Explanation */}
                                 {question.explanation && (
-                                    <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
-                                        <p className="text-sm font-medium text-blue-400 mb-1">Explanation:</p>
-                                        <p className="text-neutral-300 text-sm">{question.explanation}</p>
-                                    </div>
-                                )}
-
-                                {/* Status Message */}
-                                {!wasAnswered && (
-                                    <div className="mt-3 text-sm text-neutral-500 italic">
-                                        You didn't answer this question
+                                    <div className="bg-neutral-800/50 border border-neutral-700/50 rounded-lg p-4 mt-4">
+                                        <p className="text-sm text-neutral-300 leading-relaxed">
+                                            <span className="font-semibold text-neutral-400">💡 Explanation: </span>
+                                            {question.explanation}
+                                        </p>
                                     </div>
                                 )}
                             </div>
@@ -243,60 +237,62 @@ export function QuizResults({ quizId, result, timeTaken, quiz, userAnswers }: Qu
                 </div>
             </motion.div>
 
-            {/* Leaderboard */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="p-6 rounded-2xl bg-black/40 backdrop-blur-xl border border-neutral-800"
-            >
-                <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                    <IconMedal className="w-6 h-6 text-yellow-400" />
-                    Leaderboard
-                </h3>
+            {/* Leaderboard - Only show if enabled by admin */}
+            {quiz.showLeaderboard && (
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="p-6 rounded-2xl bg-black/40 backdrop-blur-xl border border-neutral-800"
+                >
+                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                        <IconMedal className="w-6 h-6 text-yellow-400" />
+                        Leaderboard
+                    </h3>
 
-                {loading ? (
-                    <div className="text-center py-8 text-neutral-400">Loading leaderboard...</div>
-                ) : leaderboard.length === 0 ? (
-                    <div className="text-center py-8 text-neutral-400">
-                        Be the first to complete this quiz!
-                    </div>
-                ) : (
-                    <div className="space-y-2">
-                        {leaderboard.map((entry, index) => (
-                            <div
-                                key={index}
-                                className={`
+                    {loading ? (
+                        <div className="text-center py-8 text-neutral-400">Loading leaderboard...</div>
+                    ) : leaderboard.length === 0 ? (
+                        <div className="text-center py-8 text-neutral-400">
+                            Be the first to complete this quiz!
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            {leaderboard.map((entry, index) => (
+                                <div
+                                    key={index}
+                                    className={`
                                     flex items-center justify-between p-3 rounded-xl
                                     ${index === 0 ? "bg-yellow-500/10 border border-yellow-500/30" :
-                                        index === 1 ? "bg-neutral-400/10 border border-neutral-400/30" :
-                                            index === 2 ? "bg-orange-500/10 border border-orange-500/30" :
-                                                "bg-neutral-800/30 border border-neutral-700/50"
-                                    }
+                                            index === 1 ? "bg-neutral-400/10 border border-neutral-400/30" :
+                                                index === 2 ? "bg-orange-500/10 border border-orange-500/30" :
+                                                    "bg-neutral-800/30 border border-neutral-700/50"
+                                        }
                                 `}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <span className={`
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <span className={`
                                         w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm
                                         ${index === 0 ? "bg-yellow-500 text-black" :
-                                            index === 1 ? "bg-neutral-400 text-black" :
-                                                index === 2 ? "bg-orange-500 text-black" :
-                                                    "bg-neutral-700 text-neutral-300"
-                                        }
+                                                index === 1 ? "bg-neutral-400 text-black" :
+                                                    index === 2 ? "bg-orange-500 text-black" :
+                                                        "bg-neutral-700 text-neutral-300"
+                                            }
                                     `}>
-                                        {index + 1}
-                                    </span>
-                                    <span className="text-white font-medium">{entry.studentName}</span>
+                                            {index + 1}
+                                        </span>
+                                        <span className="text-white font-medium">{entry.studentName}</span>
+                                    </div>
+                                    <div className="flex items-center gap-4 text-sm">
+                                        <span className="text-green-400">{entry.score} pts</span>
+                                        <span className="text-neutral-500">{formatTime(entry.timeTaken)}</span>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-4 text-sm">
-                                    <span className="text-green-400">{entry.score} pts</span>
-                                    <span className="text-neutral-500">{formatTime(entry.timeTaken)}</span>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </motion.div>
+                            ))}
+                        </div>
+                    )}
+                </motion.div>
+            )}
         </div>
     );
 }

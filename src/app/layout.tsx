@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Outfit, Inter, Fira_Code } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers";
 import { NavbarDemo } from "@/components/layout/NavbarDemo";
@@ -10,7 +10,9 @@ import { SmoothScroll } from "@/components/motion/smooth-scroll";
 import { CommandBar } from "@/components/features/navigation/CommandBar";
 import { AuthProvider } from "@/context/AuthContext";
 
-const inter = Inter({ subsets: ["latin"] });
+const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const firaCode = Fira_Code({ subsets: ["latin"], variable: "--font-mono" });
 
 export const metadata: Metadata = {
     title: "Kode Club - Learn, Code, Compete",
@@ -27,7 +29,10 @@ export default function RootLayout({
             <body
                 className={cn(
                     "min-h-screen bg-background font-sans antialiased",
-                    inter.className
+                    outfit.variable,
+                    inter.variable,
+                    firaCode.variable,
+                    "font-[family-name:var(--font-outfit)]"
                 )}
             >
                 <ThemeProvider

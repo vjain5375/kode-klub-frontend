@@ -55,7 +55,12 @@ export function ProblemCard({ problem }: ProblemCardProps) {
                 </div>
             </CardContent>
             <CardFooter>
-                <Link href={`/dpp/${problem.slug}`} className="w-full">
+                <Link
+                    href={problem.leetcodeUrl || `/dpp/${problem.slug}`}
+                    className="w-full"
+                    target={problem.leetcodeUrl ? "_blank" : undefined}
+                    rel={problem.leetcodeUrl ? "noopener noreferrer" : undefined}
+                >
                     <Button className="w-full gap-2 group">
                         Solve Problem
                         <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />

@@ -10,6 +10,7 @@ export interface Problem {
     description: string;
     solveRate: number;
     publishDate: string; // ISO date
+    leetcodeUrl?: string;
 }
 
 export const problems: Problem[] = [

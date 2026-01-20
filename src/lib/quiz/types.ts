@@ -12,6 +12,7 @@ export interface Quiz {
     _id: string;
     title: string;
     createdAt: string;
+    showLeaderboard?: boolean; // Admin toggle
     quizData: {
         quizTitle: string;
         questions: QuizQuestion[];

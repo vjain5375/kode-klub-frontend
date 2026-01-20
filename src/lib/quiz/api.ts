@@ -213,3 +213,169 @@ export async function fetchAllHistory(): Promise<any[]> {
 
     return response.json();
 }
+
+/**
+ * Check if user has already attempted a quiz
+ */
+export async function checkUserAttempt(quizId: string): Promise<{
+    attempted: boolean;
+    score?: number;
+    timeTaken?: number;
+    createdAt?: string;
+    answers?: number[];
+}> {
+    const token = localStorage.getItem('token');
+
+    const response = await fetch(`${API_BASE_URL}/api/attempt/check/${quizId}`, {
+        cache: 'no-store', // Disable caching to ensure fresh status
+        headers: token ? {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        } : {
+            'Content-Type': 'application/json'
+        }
+    });
+
+    if (!response.ok) {
+        return { attempted: false };
+    }
+
+    return response.json();
+}
+
+/**
+ * Toggle leaderboard visibility for a quiz (Admin only)
+ */
+export async function toggleLeaderboard(quizId: string): Promise<{ showLeaderboard: boolean }> {
+    const token = localStorage.getItem('token');
+    if (!token) throw new Error('Not authenticated');
+
+    const response = await fetch(`${API_BASE_URL}/api/quiz/${quizId}/toggle-leaderboard`, {
+        method: 'PATCH',
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to toggle leaderboard');
+    }
+    return response.json();
+}
+
+/**
+ * Fetch overall leaderboard (aggregated across all quizzes)
+ */
+export async function fetchOverallLeaderboard(): Promise<{
+    visible: boolean;
+    message?: string;
+    totalParticipants: number;
+    leaderboard: Array<{
+        userId: string;
+        studentName: string;
+        totalQuizzes: number;
+        totalScore: number;
+        totalQuestions: number;
+        avgPercentage: number;
+        overallPercentage: number;
+    }>;
+}> {
+    const token = localStorage.getItem('token');
+
+    const response = await fetch(`${API_BASE_URL}/api/leaderboard/overall`, {
+        headers: token ? {
+            'Authorization': `Bearer ${token}`
+        } : {}
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to fetch overall leaderboard');
+    }
+
+    return response.json();
+}
+
+/**
+ * Fetch quiz-specific leaderboard with visibility check
+ */
+export async function fetchQuizLeaderboard(quizId: string): Promise<{
+    visible: boolean;
+    message?: string;
+    quizTitle?: string;
+    totalAttempts: number;
+    leaderboard: Array<{
+        studentName: string;
+        studentId?: string;
+        score: number;
+        timeTaken: number;
+        createdAt: string;
+    }>;
+}> {
+    const token = localStorage.getItem('token');
+
+    const response = await fetch(`${API_BASE_URL}/api/leaderboard/quiz/${quizId}`, {
+        headers: token ? {
+            'Authorization': `Bearer ${token}`
+        } : {}
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to fetch quiz leaderboard');
+    }
+
+    return response.json();
+}
+
+/**
+ * Admin: Fetch all leaderboards for dashboard
+ */
+export async function fetchAllLeaderboardsAdmin(): Promise<{
+    showOverallLeaderboard: boolean;
+    quizLeaderboards: Array<{
+        quizId: string;
+        title: string;
+        showLeaderboard: boolean;
+        attemptCount: number;
+        topAttempts: Array<{
+            studentName: string;
+            score: number;
+            timeTaken: number;
+            createdAt: string;
+        }>;
+    }>;
+}> {
+    const token = localStorage.getItem('token');
+    if (!token) throw new Error('Not authenticated');
+
+    const response = await fetch(`${API_BASE_URL}/api/leaderboard/admin/all`, {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to fetch admin leaderboards');
+    }
+
+    return response.json();
+}
+
+/**
+ * Admin: Toggle overall leaderboard visibility
+ */
+export async function toggleOverallLeaderboard(): Promise<{ showOverallLeaderboard: boolean }> {
+    const token = localStorage.getItem('token');
+    if (!token) throw new Error('Not authenticated');
+
+    const response = await fetch(`${API_BASE_URL}/api/leaderboard/admin/toggle-overall`, {
+        method: 'PATCH',
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to toggle overall leaderboard');
+    }
+    return response.json();
+}

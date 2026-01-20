@@ -165,7 +165,7 @@ export function Hero() {
                     <div className="flex items-center gap-2 rounded-full bg-neutral-800/80 backdrop-blur px-4 py-1.5 text-sm border border-neutral-700/50">
                         <Trophy className="h-4 w-4 text-primary" />
                         <span className="text-neutral-300">Daily Coding Challenge Active</span>
-                        <span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                        <span className="flex h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
                     </div>
                 </motion.div>
 
@@ -178,17 +178,17 @@ export function Hero() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.1 }}
-                        className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-4"
+                        className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-6"
                     >
                         <span className="text-neutral-200">Master Coding</span>{" "}
                         <br />
                         <span className="text-neutral-200">with </span>
-                        <span className="bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-500 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]">
+                        <span className="bg-gradient-to-r from-orange-400 via-amber-500 to-yellow-500 bg-clip-text text-transparent">
                             Kode Club
                         </span>
                     </motion.h1>
 
-                    <div className="text-2xl md:text-3xl font-mono font-medium tracking-tight mb-10 h-10 flex items-center justify-center gap-1">
+                    <div className="text-3xl md:text-4xl font-mono font-medium tracking-tight mb-12 h-12 flex items-center justify-center gap-1">
                         {/* Typewriter Effect Container */}
                         <motion.span
                             initial={{ opacity: 0 }}
@@ -219,7 +219,7 @@ export function Hero() {
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
                                         transition={{ duration: 0, delay: i * 0.1 + 1.2 }} // Start after Code. finishes
-                                        className="text-blue-400 font-bold drop-shadow-md"
+                                        className="text-orange-400 font-bold"
                                     >
                                         {char}
                                     </motion.span>
@@ -247,7 +247,7 @@ export function Hero() {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: [0, 1, 0] }}
                             transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
-                            className="w-[2px] h-6 md:h-7 bg-blue-500 ml-1"
+                            className="w-[2px] h-6 md:h-7 bg-orange-500 ml-1"
                         />
                     </div>
 
@@ -255,7 +255,7 @@ export function Hero() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="text-lg md:text-xl text-neutral-400 max-w-2xl mx-auto mb-8"
+                        className="text-xl md:text-2xl text-neutral-400 max-w-3xl mx-auto mb-10"
                     >
                         The coding platform for RGIPT students. Daily problems, instant execution, real competition.
                     </motion.p>
@@ -268,7 +268,7 @@ export function Hero() {
                         className="flex flex-wrap items-center justify-center gap-4"
                     >
                         <Link href="/dpp">
-                            <Button size="lg" className="gap-2 bg-primary hover:bg-primary/90">
+                            <Button size="lg" className="gap-2 bg-orange-600 hover:bg-orange-500 text-white border-0">
                                 Try Today&apos;s DPP <ArrowRight className="w-4 h-4" />
                             </Button>
                         </Link>
@@ -280,34 +280,36 @@ export function Hero() {
                         </Link>
                     </motion.div>
                 </motion.div>
+            </div>
 
-                {/* Velocity Text Section - Takes up vertical space */}
-                <div className="relative py-16 my-16 overflow-hidden">
-                    {/* Gradient Fades */}
-                    <div className="pointer-events-none absolute inset-y-0 left-0 w-1/4 bg-gradient-to-r from-background to-transparent z-10" />
-                    <div className="pointer-events-none absolute inset-y-0 right-0 w-1/4 bg-gradient-to-l from-background to-transparent z-10" />
+            {/* Velocity Text Section - Full Width */}
+            <div className="w-full relative py-16 my-8 overflow-hidden">
+                {/* Gradient Fades */}
+                <div className="pointer-events-none absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-background to-transparent z-10" />
+                <div className="pointer-events-none absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-background to-transparent z-10" />
 
-                    <ScrollVelocityContainer className="pointer-events-none flex flex-col justify-center gap-16 text-center">
-                        <ScrollVelocityRow
-                            baseVelocity={1}
-                            direction={1}
-                            className="text-white/15 text-6xl md:text-7xl lg:text-8xl font-extrabold tracking-[0.2em]"
-                        >
-                            CODE • BUILD • INNOVATE • REPEAT •
-                        </ScrollVelocityRow>
+                <ScrollVelocityContainer className="pointer-events-none flex flex-col justify-center gap-16 text-center w-full">
+                    <ScrollVelocityRow
+                        baseVelocity={1}
+                        direction={1}
+                        className="text-white/10 text-7xl md:text-8xl lg:text-9xl font-black tracking-widest uppercase select-none whitespace-nowrap"
+                    >
+                        CODE • BUILD • INNOVATE • REPEAT •
+                    </ScrollVelocityRow>
 
-                        <ScrollVelocityRow
-                            baseVelocity={1}
-                            direction={-1}
-                            className="text-white/15 text-6xl md:text-7xl lg:text-8xl font-extrabold tracking-[0.2em]"
-                        >
-                            KODE CLUB • RGIPT • OPEN SOURCE •
-                        </ScrollVelocityRow>
-                    </ScrollVelocityContainer>
-                </div>
+                    <ScrollVelocityRow
+                        baseVelocity={1}
+                        direction={-1}
+                        className="text-white/10 text-7xl md:text-8xl lg:text-9xl font-black tracking-widest uppercase select-none whitespace-nowrap"
+                    >
+                        KODE CLUB • RGIPT • OPEN SOURCE •
+                    </ScrollVelocityRow>
+                </ScrollVelocityContainer>
+            </div>
 
+            <div className="container relative z-20">
                 {/* Live Code Block - Separate section with spacing */}
-                <div className="mt-16">
+                <div className="mt-8">
                     <LiveCodeBlock />
                 </div>
             </div>

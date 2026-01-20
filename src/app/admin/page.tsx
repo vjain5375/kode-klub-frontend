@@ -2,15 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { createQuiz, deleteQuiz, fetchAllHistory, fetchAllQuizzes, updateQuiz, toggleQuizStatus } from "@/lib/quiz/api";
+import { createQuiz, deleteQuiz, fetchAllHistory, fetchAllQuizzes, updateQuiz, toggleQuizStatus, fetchAllLeaderboardsAdmin, toggleLeaderboard, toggleOverallLeaderboard } from "@/lib/quiz/api";
 import { useRouter } from "next/navigation";
-import { IconPlus, IconTrash, IconLoader2, IconCheck, IconPencil, IconX, IconRefresh, IconEye, IconEyeOff } from "@tabler/icons-react";
+import { IconPlus, IconTrash, IconLoader2, IconCheck, IconPencil, IconX, IconRefresh, IconEye, IconEyeOff, IconTrophy, IconChartBar, IconCode } from "@tabler/icons-react";
 import { motion } from "framer-motion";
 
 export default function AdminPage() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<'create' | 'manage' | 'history'>('create');
+    const [activeTab, setActiveTab] = useState<'create' | 'manage' | 'history' | 'leaderboards' | 'dpps'>('create');
     const [loading, setLoading] = useState(false);
 
     // Create State
@@ -26,9 +26,26 @@ export default function AdminPage() {
     // History State
     const [history, setHistory] = useState<any[]>([]);
 
+    // Leaderboard State
+    const [leaderboardData, setLeaderboardData] = useState<{ showOverallLeaderboard: boolean; quizLeaderboards: any[] }>({ showOverallLeaderboard: false, quizLeaderboards: [] });
+    const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+
     // Paste Modal State
     const [showPasteModal, setShowPasteModal] = useState(false);
     const [pastedJson, setPastedJson] = useState("");
+
+    // DPP State
+    const [dpps, setDpps] = useState<any[]>([]);
+    const [dppLoading, setDppLoading] = useState(false);
+    const [showDppForm, setShowDppForm] = useState(false);
+    const [editingDpp, setEditingDpp] = useState<any | null>(null);
+    const [dppForm, setDppForm] = useState({
+        title: '',
+        difficulty: 'Easy',
+        tags: [] as string[],
+        description: '',
+        leetcodeUrl: ''
+    });
 
     useEffect(() => {
         if (!authLoading && (!user || user.role !== 'admin')) {
@@ -38,6 +55,8 @@ export default function AdminPage() {
 
         if (activeTab === 'manage') loadQuizzes();
         if (activeTab === 'history') loadHistory();
+        if (activeTab === 'leaderboards') loadLeaderboards();
+        if (activeTab === 'dpps') loadDpps();
     }, [activeTab, user, authLoading, router]);
 
     const loadQuizzes = async () => {
@@ -55,6 +74,132 @@ export default function AdminPage() {
             setHistory(data);
         } catch (error) {
             console.error("Failed to load history", error);
+        }
+    };
+
+    const loadLeaderboards = async () => {
+        setLeaderboardLoading(true);
+        try {
+            const data = await fetchAllLeaderboardsAdmin();
+            setLeaderboardData(data);
+        } catch (error) {
+            console.error("Failed to load leaderboards", error);
+        } finally {
+            setLeaderboardLoading(false);
+        }
+    };
+
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
+    const loadDpps = async () => {
+        setDppLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_BASE_URL}/api/dpp/admin/all`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+            setDpps(data.dpps || []);
+        } catch (error) {
+            console.error("Failed to load DPPs", error);
+        } finally {
+            setDppLoading(false);
+        }
+    };
+
+    const handleDppSubmit = async () => {
+        if (!dppForm.title || !dppForm.description || !dppForm.leetcodeUrl) {
+            alert("Please fill all required fields, including LeetCode URL");
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            const url = editingDpp
+                ? `${API_BASE_URL}/api/dpp/${editingDpp._id}`
+                : `${API_BASE_URL}/api/dpp/create`;
+
+            const response = await fetch(url, {
+                method: editingDpp ? 'PUT' : 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(dppForm)
+            });
+
+            if (!response.ok) throw new Error('Failed to save DPP');
+
+            alert(editingDpp ? 'DPP updated!' : 'DPP created!');
+            setShowDppForm(false);
+            setEditingDpp(null);
+            setDppForm({ title: '', difficulty: 'Easy', tags: [], description: '', leetcodeUrl: '' });
+            loadDpps();
+        } catch (error) {
+            alert("Failed to save DPP");
+        }
+    };
+
+    const handleDeleteDpp = async (id: string) => {
+        if (!confirm("Delete this DPP?")) return;
+        try {
+            const token = localStorage.getItem('token');
+            await fetch(`${API_BASE_URL}/api/dpp/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            setDpps(dpps.filter(d => d._id !== id));
+        } catch (error) {
+            alert("Failed to delete DPP");
+        }
+    };
+
+    const handleToggleDpp = async (id: string) => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_BASE_URL}/api/dpp/${id}/toggle`, {
+                method: 'PATCH',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+            setDpps(dpps.map(d => d._id === id ? { ...d, isActive: data.isActive } : d));
+        } catch (error) {
+            alert("Failed to toggle DPP");
+        }
+    };
+
+    const handleEditDpp = (dpp: any) => {
+        setEditingDpp(dpp);
+        setDppForm({
+            title: dpp.title,
+            difficulty: dpp.difficulty,
+            tags: dpp.tags || [],
+            description: dpp.description,
+            leetcodeUrl: dpp.leetcodeUrl || ''
+        });
+        setShowDppForm(true);
+    };
+
+    const handleToggleQuizLeaderboard = async (quizId: string) => {
+        try {
+            const result = await toggleLeaderboard(quizId);
+            setLeaderboardData(prev => ({
+                ...prev,
+                quizLeaderboards: prev.quizLeaderboards.map(q =>
+                    q.quizId === quizId ? { ...q, showLeaderboard: result.showLeaderboard } : q
+                )
+            }));
+        } catch (error) {
+            alert("Failed to toggle leaderboard");
+        }
+    };
+
+    const handleToggleOverallLeaderboard = async () => {
+        try {
+            const result = await toggleOverallLeaderboard();
+            setLeaderboardData(prev => ({ ...prev, showOverallLeaderboard: result.showOverallLeaderboard }));
+        } catch (error) {
+            alert("Failed to toggle overall leaderboard");
         }
     };
 
@@ -113,7 +258,8 @@ export default function AdminPage() {
                     id: q.id,
                     question: q.question,
                     options: q.options,
-                    correctAnswer: q.correctAnswer // Index
+                    correctAnswer: q.correctAnswer, // Index
+                    explanation: (q as any).explanation || null // Include explanation
                 }))
             };
 
@@ -233,7 +379,8 @@ export default function AdminPage() {
                     id: idx + 1,
                     question: q.question,
                     options: q.options,
-                    correctAnswer: correctIdx
+                    correctAnswer: correctIdx,
+                    explanation: q.explanation || null // Preserve explanation
                 };
             });
 
@@ -291,7 +438,7 @@ export default function AdminPage() {
             <p className="text-neutral-400 mb-8">Manage quizzes and view student progress</p>
 
             <div className="flex gap-4 mb-8 border-b border-white/10 pb-1">
-                {['create', 'manage', 'history'].map((tab) => (
+                {['create', 'manage', 'history', 'leaderboards', 'dpps'].map((tab) => (
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab as any)}
@@ -521,6 +668,257 @@ export default function AdminPage() {
                         </tbody>
                     </table>
                     {history.length === 0 && <p className="text-neutral-500 text-center py-8">No attempts recorded yet.</p>}
+                </motion.div>
+            )}
+
+            {/* LEADERBOARDS TAB */}
+            {activeTab === 'leaderboards' && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                            <IconTrophy className="w-6 h-6 text-yellow-400" />
+                            Leaderboard Management
+                        </h2>
+                        <button
+                            onClick={loadLeaderboards}
+                            className="flex items-center gap-2 px-4 py-2 bg-neutral-800 hover:bg-neutral-700 rounded-lg text-white transition-colors"
+                        >
+                            <IconRefresh className="w-4 h-4" />
+                            Refresh
+                        </button>
+                    </div>
+
+                    {leaderboardLoading ? (
+                        <div className="text-center py-12 text-neutral-400">
+                            <IconLoader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
+                            Loading leaderboards...
+                        </div>
+                    ) : (
+                        <div className="space-y-6">
+                            {/* Overall Leaderboard Toggle */}
+                            <div className="p-6 rounded-xl bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/20">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 rounded-xl bg-yellow-500/20 flex items-center justify-center">
+                                            <IconChartBar className="w-6 h-6 text-yellow-400" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-bold text-white">Overall Leaderboard</h3>
+                                            <p className="text-neutral-400 text-sm">
+                                                Aggregated rankings across all quizzes (by average score)
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={handleToggleOverallLeaderboard}
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${leaderboardData.showOverallLeaderboard
+                                            ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                            : 'bg-neutral-800 text-neutral-400 border border-neutral-700'
+                                            }`}
+                                    >
+                                        {leaderboardData.showOverallLeaderboard ? (
+                                            <><IconEye className="w-4 h-4" /> Published</>
+                                        ) : (
+                                            <><IconEyeOff className="w-4 h-4" /> Hidden</>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Quiz-wise Leaderboards */}
+                            <div className="space-y-4">
+                                <h3 className="text-lg font-semibold text-white">Quiz-wise Leaderboards</h3>
+                                {leaderboardData.quizLeaderboards.length === 0 ? (
+                                    <p className="text-neutral-500 text-center py-8">No quizzes created yet.</p>
+                                ) : (
+                                    <div className="grid gap-4">
+                                        {leaderboardData.quizLeaderboards.map((quiz) => (
+                                            <div
+                                                key={quiz.quizId}
+                                                className="p-4 rounded-xl bg-neutral-900/50 border border-neutral-800 hover:border-neutral-700 transition-colors"
+                                            >
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <div>
+                                                        <h4 className="font-medium text-white">{quiz.title}</h4>
+                                                        <p className="text-sm text-neutral-500">
+                                                            {quiz.attemptCount} attempt{quiz.attemptCount !== 1 ? 's' : ''}
+                                                        </p>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => handleToggleQuizLeaderboard(quiz.quizId)}
+                                                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${quiz.showLeaderboard
+                                                            ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                                            : 'bg-neutral-800 text-neutral-400 border border-neutral-700'
+                                                            }`}
+                                                    >
+                                                        {quiz.showLeaderboard ? (
+                                                            <><IconEye className="w-3 h-3" /> Visible</>
+                                                        ) : (
+                                                            <><IconEyeOff className="w-3 h-3" /> Hidden</>
+                                                        )}
+                                                    </button>
+                                                </div>
+
+                                                {/* Top 3 Preview */}
+                                                {quiz.topAttempts.length > 0 && (
+                                                    <div className="mt-3 pt-3 border-t border-neutral-800">
+                                                        <p className="text-xs text-neutral-500 mb-2">Top 3:</p>
+                                                        <div className="flex gap-2 flex-wrap">
+                                                            {quiz.topAttempts.slice(0, 3).map((attempt: any, idx: number) => (
+                                                                <span
+                                                                    key={idx}
+                                                                    className={`text-xs px-2 py-1 rounded ${idx === 0 ? 'bg-yellow-500/20 text-yellow-400' :
+                                                                        idx === 1 ? 'bg-neutral-500/20 text-neutral-300' :
+                                                                            'bg-orange-500/20 text-orange-400'
+                                                                        }`}
+                                                                >
+                                                                    {idx + 1}. {attempt.studentName} ({attempt.score}pts)
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </motion.div>
+            )}
+
+            {/* DPPS TAB */}
+            {activeTab === 'dpps' && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                            <IconCode className="w-6 h-6 text-green-400" />
+                            Daily Practice Problems
+                        </h2>
+                        <button
+                            onClick={() => { setShowDppForm(true); setEditingDpp(null); setDppForm({ title: '', difficulty: 'Easy', tags: [], description: '', leetcodeUrl: '' }); }}
+                            className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-white transition-colors"
+                        >
+                            <IconPlus className="w-4 h-4" />
+                            Add DPP
+                        </button>
+                    </div>
+
+                    {/* DPP Form Modal */}
+                    {showDppForm && (
+                        <div className="p-6 rounded-xl bg-neutral-900/80 border border-neutral-800 mb-6">
+                            <h3 className="text-lg font-bold text-white mb-4">{editingDpp ? 'Edit DPP' : 'Create New DPP'}</h3>
+                            <div className="space-y-4">
+                                <input
+                                    type="text"
+                                    placeholder="Problem Title"
+                                    value={dppForm.title}
+                                    onChange={(e) => setDppForm({ ...dppForm, title: e.target.value })}
+                                    className="w-full px-4 py-3 rounded-lg bg-neutral-800 border border-neutral-700 text-white"
+                                />
+                                <div className="flex gap-4">
+                                    <select
+                                        value={dppForm.difficulty}
+                                        onChange={(e) => setDppForm({ ...dppForm, difficulty: e.target.value })}
+                                        className="px-4 py-3 rounded-lg bg-neutral-800 border border-neutral-700 text-white"
+                                    >
+                                        <option value="Easy">Easy</option>
+                                        <option value="Medium">Medium</option>
+                                        <option value="Hard">Hard</option>
+                                    </select>
+                                    <input
+                                        type="text"
+                                        placeholder="LeetCode URL (required)"
+                                        value={dppForm.leetcodeUrl}
+                                        onChange={(e) => setDppForm({ ...dppForm, leetcodeUrl: e.target.value })}
+                                        className="flex-1 px-4 py-3 rounded-lg bg-neutral-800 border border-neutral-700 text-white"
+                                    />
+                                </div>
+                                <textarea
+                                    placeholder="Problem Description (Markdown supported)"
+                                    value={dppForm.description}
+                                    onChange={(e) => setDppForm({ ...dppForm, description: e.target.value })}
+                                    rows={6}
+                                    className="w-full px-4 py-3 rounded-lg bg-neutral-800 border border-neutral-700 text-white font-mono text-sm"
+                                />
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={handleDppSubmit}
+                                        className="px-6 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg"
+                                    >
+                                        {editingDpp ? 'Update' : 'Create'} DPP
+                                    </button>
+                                    <button
+                                        onClick={() => { setShowDppForm(false); setEditingDpp(null); }}
+                                        className="px-6 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* DPP List */}
+                    {dppLoading ? (
+                        <div className="text-center py-12 text-neutral-400">
+                            <IconLoader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
+                            Loading DPPs...
+                        </div>
+                    ) : dpps.length === 0 ? (
+                        <p className="text-neutral-500 text-center py-8">No DPPs created yet. Click "Add DPP" to create one.</p>
+                    ) : (
+                        <div className="space-y-3">
+                            {dpps.map((dpp) => (
+                                <div
+                                    key={dpp._id}
+                                    className="p-4 rounded-xl bg-neutral-900/50 border border-neutral-800 hover:border-neutral-700 transition-colors"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <span className={`px-2 py-1 rounded text-xs font-bold ${dpp.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400' :
+                                                dpp.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                                                    'bg-red-500/20 text-red-400'
+                                                }`}>
+                                                {dpp.difficulty}
+                                            </span>
+                                            <div>
+                                                <h4 className="font-medium text-white">{dpp.title}</h4>
+                                                <p className="text-xs text-neutral-500">
+                                                    {new Date(dpp.publishDate).toLocaleDateString()}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => handleToggleDpp(dpp._id)}
+                                                className={`p-2 rounded-lg transition-colors ${dpp.isActive
+                                                    ? 'bg-green-500/20 text-green-400'
+                                                    : 'bg-neutral-700 text-neutral-400'
+                                                    }`}
+                                                title={dpp.isActive ? 'Published' : 'Hidden'}
+                                            >
+                                                {dpp.isActive ? <IconEye className="w-4 h-4" /> : <IconEyeOff className="w-4 h-4" />}
+                                            </button>
+                                            <button
+                                                onClick={() => handleEditDpp(dpp)}
+                                                className="p-2 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30"
+                                            >
+                                                <IconPencil className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteDpp(dpp._id)}
+                                                className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30"
+                                            >
+                                                <IconTrash className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </motion.div>
             )}
         </div>

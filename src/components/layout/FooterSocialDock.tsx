@@ -3,10 +3,10 @@ import React from "react";
 import { FloatingDock } from "@/components/ui/floating-dock";
 import {
     IconBrandGithub,
-    IconBrandX,
-    IconBrandLinkedin,
+    IconBrandWhatsapp,
+    IconBrandInstagram,
     IconMail,
-    IconBrandDiscord,
+    IconHome,
 } from "@tabler/icons-react";
 
 export function FooterSocialDock() {
@@ -17,24 +17,24 @@ export function FooterSocialDock() {
             href: "https://github.com/kodeclub-rgipt",
         },
         {
-            title: "LinkedIn",
-            icon: <IconBrandLinkedin className="h-full w-full" />,
-            href: "https://linkedin.com",
+            title: "Instagram",
+            icon: <IconBrandInstagram className="h-full w-full" />,
+            href: "https://www.instagram.com/kode_club_rgipt/",
         },
         {
-            title: "Discord",
-            icon: <IconBrandDiscord className="h-full w-full" />,
-            href: "https://discord.com",
+            title: "Home",
+            icon: <IconHome className="h-full w-full" />,
+            href: "/",
         },
         {
-            title: "X (Twitter)",
-            icon: <IconBrandX className="h-full w-full" />,
-            href: "https://twitter.com",
+            title: "WhatsApp",
+            icon: <IconBrandWhatsapp className="h-full w-full" />,
+            href: "https://chat.whatsapp.com/KIknb8dNIWy7ANX0aEKjpZ",
         },
         {
             title: "Email",
             icon: <IconMail className="h-full w-full" />,
-            href: "mailto:kodeclub@rgipt.ac.in",
+            href: "mailto:kodeclub@gmail.com",
         },
     ];
 
