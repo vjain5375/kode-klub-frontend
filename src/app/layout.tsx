@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Outfit, Inter, Fira_Code } from "next/font/google";
+import { Outfit, Inter, Fira_Code } from "next/font/google"; // Ensure Outfit is imported
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers";
 import { NavbarDemo } from "@/components/layout/NavbarDemo";
@@ -7,7 +7,7 @@ import { Footer } from "@/components/layout/Footer";
 import { GlobalVideoBackground } from "@/components/layout/GlobalVideoBackground";
 import { cn } from "@/lib/utils";
 import { SmoothScroll } from "@/components/motion/smooth-scroll";
-import { CommandBar } from "@/components/features/navigation/CommandBar";
+import { CommandBar } from "@/components/features/navigation/CommandBar"; // Restore CommandBar
 import { AuthProvider } from "@/context/AuthContext";
 
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });

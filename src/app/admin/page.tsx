@@ -3,15 +3,21 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { createQuiz, deleteQuiz, fetchAllHistory, fetchAllQuizzes, updateQuiz, toggleQuizStatus, fetchAllLeaderboardsAdmin, toggleLeaderboard, toggleOverallLeaderboard } from "@/lib/quiz/api";
+import { fetchAdminStats, createAnnouncement, deleteAnnouncement, toggleAnnouncement, fetchAdminAnnouncements, type AdminStats, type Announcement } from "@/lib/admin/api";
 import { useRouter } from "next/navigation";
-import { IconPlus, IconTrash, IconLoader2, IconCheck, IconPencil, IconX, IconRefresh, IconEye, IconEyeOff, IconTrophy, IconChartBar, IconCode } from "@tabler/icons-react";
+import { IconPlus, IconTrash, IconLoader2, IconCheck, IconPencil, IconX, IconRefresh, IconEye, IconEyeOff, IconTrophy, IconChartBar, IconCode, IconUsers, IconDatabase, IconSpeakerphone } from "@tabler/icons-react";
 import { motion } from "framer-motion";
 
 export default function AdminPage() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<'create' | 'manage' | 'history' | 'leaderboards' | 'dpps'>('create');
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'create' | 'manage' | 'history' | 'leaderboards' | 'dpps'>('dashboard');
     const [loading, setLoading] = useState(false);
+
+    // Dashboard State
+    const [stats, setStats] = useState<AdminStats | null>(null);
+    const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+    const [announcementForm, setAnnouncementForm] = useState({ message: '', type: 'info' });
 
     // Create State
     const [title, setTitle] = useState("");
@@ -53,11 +59,55 @@ export default function AdminPage() {
             return;
         }
 
+        if (activeTab === 'dashboard') loadDashboard();
         if (activeTab === 'manage') loadQuizzes();
         if (activeTab === 'history') loadHistory();
         if (activeTab === 'leaderboards') loadLeaderboards();
         if (activeTab === 'dpps') loadDpps();
     }, [activeTab, user, authLoading, router]);
+
+    const loadDashboard = async () => {
+        try {
+            const [statsData, announcementsData] = await Promise.all([
+                fetchAdminStats(),
+                fetchAdminAnnouncements()
+            ]);
+            setStats(statsData);
+            setAnnouncements(announcementsData);
+        } catch (error) {
+            console.error("Failed to load dashboard", error);
+        }
+    };
+
+    const handleCreateAnnouncement = async () => {
+        if (!announcementForm.message) return;
+        try {
+            const newAnnouncement = await createAnnouncement(announcementForm.message, announcementForm.type);
+            setAnnouncements([newAnnouncement, ...announcements]);
+            setAnnouncementForm({ message: '', type: 'info' });
+        } catch (error) {
+            alert("Failed to create announcement");
+        }
+    };
+
+    const handleDeleteAnnouncement = async (id: string) => {
+        if (!confirm("Delete announcement?")) return;
+        try {
+            await deleteAnnouncement(id);
+            setAnnouncements(announcements.filter(a => a._id !== id));
+        } catch (error) {
+            alert("Failed to delete announcement");
+        }
+    };
+
+    const handleToggleAnnouncement = async (id: string) => {
+        try {
+            const updated = await toggleAnnouncement(id);
+            setAnnouncements(announcements.map(a => a._id === id ? updated : a));
+        } catch (error) {
+            alert("Failed to toggle status");
+        }
+    };
 
     const loadQuizzes = async () => {
         try {
@@ -437,8 +487,8 @@ export default function AdminPage() {
             <h1 className="text-3xl font-bold text-white mb-2">Admin Dashboard</h1>
             <p className="text-neutral-400 mb-8">Manage quizzes and view student progress</p>
 
-            <div className="flex gap-4 mb-8 border-b border-white/10 pb-1">
-                {['create', 'manage', 'history', 'leaderboards', 'dpps'].map((tab) => (
+            <div className="flex gap-4 mb-8 border-b border-white/10 pb-1 overflow-x-auto">
+                {['dashboard', 'create', 'manage', 'history', 'leaderboards', 'dpps'].map((tab) => (
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab as any)}
@@ -452,6 +502,142 @@ export default function AdminPage() {
                     </button>
                 ))}
             </div>
+
+            {/* DASHBOARD TAB */}
+            {activeTab === 'dashboard' && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="bg-neutral-900/50 border border-neutral-800 p-6 rounded-xl">
+                            <div className="flex justify-between items-start mb-4">
+                                <div>
+                                    <p className="text-neutral-400 text-sm">Total Users</p>
+                                    <h3 className="text-3xl font-bold text-white mt-1">{stats?.totalUsers || 0}</h3>
+                                </div>
+                                <div className="p-3 bg-blue-500/10 rounded-lg">
+                                    <IconUsers className="w-6 h-6 text-blue-400" />
+                                </div>
+                            </div>
+                            <p className="text-xs text-neutral-500">{stats?.totalAdmins || 0} Admins</p>
+                        </div>
+
+                        <div className="bg-neutral-900/50 border border-neutral-800 p-6 rounded-xl">
+                            <div className="flex justify-between items-start mb-4">
+                                <div>
+                                    <p className="text-neutral-400 text-sm">Total Visits</p>
+                                    <h3 className="text-3xl font-bold text-white mt-1">{stats?.totalVisits || 0}</h3>
+                                </div>
+                                <div className="p-3 bg-green-500/10 rounded-lg">
+                                    <IconChartBar className="w-6 h-6 text-green-400" />
+                                </div>
+                            </div>
+                            <p className="text-xs text-neutral-500">Page views</p>
+                        </div>
+
+                        <div className="bg-neutral-900/50 border border-neutral-800 p-6 rounded-xl">
+                            <div className="flex justify-between items-start mb-4">
+                                <div>
+                                    <p className="text-neutral-400 text-sm">Unique Visitors</p>
+                                    <h3 className="text-3xl font-bold text-white mt-1">{stats?.uniqueVisitors || 0}</h3>
+                                </div>
+                                <div className="p-3 bg-purple-500/10 rounded-lg">
+                                    <IconEye className="w-6 h-6 text-purple-400" />
+                                </div>
+                            </div>
+                            <p className="text-xs text-neutral-500">Distinct IPs</p>
+                        </div>
+
+                        <div className="bg-neutral-900/50 border border-neutral-800 p-6 rounded-xl">
+                            <div className="flex justify-between items-start mb-4">
+                                <div>
+                                    <p className="text-neutral-400 text-sm">Database</p>
+                                    <h3 className="text-xl font-bold text-white mt-2">{stats?.dbStatus || 'Unknown'}</h3>
+                                </div>
+                                <div className="p-3 bg-orange-500/10 rounded-lg">
+                                    <IconDatabase className="w-6 h-6 text-orange-400" />
+                                </div>
+                            </div>
+                            <p className="text-xs text-green-500 flex items-center gap-1">
+                                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                                Online
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Announcements Section */}
+                    <div className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-6">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="p-2 bg-yellow-500/10 rounded-lg">
+                                <IconSpeakerphone className="w-6 h-6 text-yellow-400" />
+                            </div>
+                            <h2 className="text-xl font-bold text-white">Announcements</h2>
+                        </div>
+
+                        {/* Create Announcement */}
+                        <div className="flex gap-4 mb-8">
+                            <input
+                                type="text"
+                                placeholder="Write a new announcement..."
+                                value={announcementForm.message}
+                                onChange={(e) => setAnnouncementForm({ ...announcementForm, message: e.target.value })}
+                                className="flex-1 bg-black/40 border border-neutral-700 rounded-lg px-4 py-2 text-white focus:border-blue-500 outline-none"
+                            />
+                            <select
+                                value={announcementForm.type}
+                                onChange={(e) => setAnnouncementForm({ ...announcementForm, type: e.target.value })}
+                                className="bg-black/40 border border-neutral-700 rounded-lg px-4 py-2 text-white outline-none"
+                            >
+                                <option value="info">Info</option>
+                                <option value="warning">Warning</option>
+                                <option value="success">Success</option>
+                                <option value="alert">Alert</option>
+                            </select>
+                            <button
+                                onClick={handleCreateAnnouncement}
+                                className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium"
+                            >
+                                Post
+                            </button>
+                        </div>
+
+                        {/* List */}
+                        <div className="space-y-4">
+                            {announcements.map((announcement) => (
+                                <div key={announcement._id} className="flex items-center justify-between p-4 bg-black/20 rounded-lg border border-neutral-800">
+                                    <div className="flex items-center gap-4">
+                                        <div className={`w-2 h-2 rounded-full ${announcement.type === 'alert' ? 'bg-red-500' :
+                                                announcement.type === 'warning' ? 'bg-yellow-500' :
+                                                    announcement.type === 'success' ? 'bg-green-500' : 'bg-blue-500'
+                                            }`} />
+                                        <div>
+                                            <p className="text-white font-medium">{announcement.message}</p>
+                                            <p className="text-xs text-neutral-500">{new Date(announcement.createdAt).toLocaleDateString()}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => handleToggleAnnouncement(announcement._id)}
+                                            className={`p-2 rounded-lg transition-colors ${announcement.isActive ? 'text-green-400 bg-green-500/10' : 'text-neutral-500 bg-neutral-800'}`}
+                                            title={announcement.isActive ? 'Active' : 'Hidden'}
+                                        >
+                                            {announcement.isActive ? <IconEye className="w-4 h-4" /> : <IconEyeOff className="w-4 h-4" />}
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteAnnouncement(announcement._id)}
+                                            className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                                        >
+                                            <IconTrash className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                            {announcements.length === 0 && (
+                                <p className="text-center text-neutral-500 py-4">No announcements posted.</p>
+                            )}
+                        </div>
+                    </div>
+                </motion.div>
+            )}
 
             {/* CREATE TAB */}
             {activeTab === 'create' && (
