@@ -188,13 +188,17 @@ function LoginForm() {
                 </button>
 
                 {/* Footer Links */}
-                <div className="mt-6 text-center">
+                <div className="mt-6 text-center space-y-2">
                     <Link
                         href="/"
-                        className="text-sm text-neutral-400 hover:text-neutral-300 transition-colors"
+                        className="block text-sm text-neutral-400 hover:text-neutral-300 transition-colors"
                     >
                         ← Back to home
                     </Link>
+                    <p className="text-sm text-neutral-400">
+                        Don't have an account?{" "}
+                        <Link href="/register" className="text-blue-500 hover:underline">Register here</Link>
+                    </p>
                 </div>
             </form>
 
