@@ -205,9 +205,9 @@ function LoginForm() {
             {/* Terms */}
             <p className="text-center text-xs text-neutral-600 mt-6">
                 By continuing, you agree to our{" "}
-                <a href="#" className="text-neutral-500 hover:text-neutral-400">Terms</a>
+                <Link href="/terms" className="text-neutral-500 hover:text-neutral-400">Terms</Link>
                 {" "}and{" "}
-                <a href="#" className="text-neutral-500 hover:text-neutral-400">Privacy Policy</a>
+                <Link href="/privacy" className="text-neutral-500 hover:text-neutral-400">Privacy Policy</Link>
             </p>
         </motion.div>
     );

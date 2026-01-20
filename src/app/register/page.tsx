@@ -133,6 +133,14 @@ export default function RegisterPage() {
                         </p>
                     </div>
                 </form>
+
+                {/* Terms */}
+                <p className="text-center text-xs text-neutral-600 mt-6">
+                    By continuing, you agree to our{" "}
+                    <Link href="/terms" className="text-neutral-500 hover:text-neutral-400">Terms</Link>
+                    {" "}and{" "}
+                    <Link href="/privacy" className="text-neutral-500 hover:text-neutral-400">Privacy Policy</Link>
+                </p>
             </motion.div>
         </div>
     );
