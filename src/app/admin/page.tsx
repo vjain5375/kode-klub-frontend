@@ -155,11 +155,14 @@ export default function AdminPage() {
     };
 
     const handleToggleStatus = async (id: string, currentStatus: boolean) => {
+        console.log('Toggle clicked:', id, 'Current status:', currentStatus);
         try {
             const result = await toggleQuizStatus(id);
+            console.log('Toggle result:', result);
             setQuizzes(quizzes.map(q => q._id === id ? { ...q, isActive: result.isActive } : q));
         } catch (error) {
-            alert("Failed to toggle quiz status");
+            console.error('Toggle error:', error);
+            alert("Failed to toggle quiz status: " + (error instanceof Error ? error.message : 'Unknown error'));
         }
     };
 

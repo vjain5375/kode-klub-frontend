@@ -178,30 +178,28 @@ export function QuizPlayer({ quiz, onComplete }: QuizPlayerProps) {
                     Previous
                 </button>
 
-                {currentQuestionIndex < questions.length - 1 ? (
-                    <button
-                        onClick={handleNext}
-                        className="flex items-center gap-2 px-6 py-3 rounded-xl font-medium bg-blue-500 text-white hover:bg-blue-600 transition-all"
-                    >
-                        Next
-                        <IconChevronRight className="w-5 h-5" />
-                    </button>
-                ) : (
+                <div className="flex items-center gap-3">
+                    {/* Always show Submit button */}
                     <button
                         onClick={handleSubmit}
-                        disabled={!allAnswered}
-                        className={`
-                            flex items-center gap-2 px-8 py-3 rounded-xl font-medium transition-all
-                            ${allAnswered
-                                ? "bg-green-500 text-white hover:bg-green-600"
-                                : "bg-neutral-800/30 text-neutral-500 cursor-not-allowed"
-                            }
-                        `}
+                        className="flex items-center gap-2 px-6 py-3 rounded-xl font-medium bg-green-500 text-white hover:bg-green-600 transition-all"
+                        title={`Submit quiz (${answeredCount}/${questions.length} answered)`}
                     >
                         <IconCheck className="w-5 h-5" />
                         Submit Quiz
                     </button>
-                )}
+
+                    {/* Next button (only if not on last question) */}
+                    {currentQuestionIndex < questions.length - 1 && (
+                        <button
+                            onClick={handleNext}
+                            className="flex items-center gap-2 px-6 py-3 rounded-xl font-medium bg-blue-500 text-white hover:bg-blue-600 transition-all"
+                        >
+                            Next
+                            <IconChevronRight className="w-5 h-5" />
+                        </button>
+                    )}
+                </div>
             </div>
         </div>
     );

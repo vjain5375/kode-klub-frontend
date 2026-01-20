@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { fetchQuizById, submitQuizAttempt } from "@/lib/quiz/api";
 import type { Quiz, QuizResult } from "@/lib/quiz/types";
@@ -9,12 +9,15 @@ import { QuizPlayer } from "@/components/features/quiz/QuizPlayer";
 import { QuizResults } from "@/components/features/quiz/QuizResults";
 import { IconUser, IconArrowRight, IconLoader2, IconAlertCircle } from "@tabler/icons-react";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
 
 type QuizState = "loading" | "error" | "registration" | "playing" | "submitting" | "results";
 
 export default function QuizPlayPage() {
     const params = useParams();
+    const router = useRouter();
     const quizId = params.id as string;
+    const { user, loading: authLoading } = useAuth();
 
     const [state, setState] = useState<QuizState>("loading");
     const [quiz, setQuiz] = useState<Quiz | null>(null);
@@ -23,18 +26,29 @@ export default function QuizPlayPage() {
     const [studentId, setStudentId] = useState("");
     const [result, setResult] = useState<QuizResult | null>(null);
     const [timeTaken, setTimeTaken] = useState(0);
+    const [userAnswers, setUserAnswers] = useState<number[]>([]);
 
     useEffect(() => {
+        if (!authLoading && !user) {
+            router.push('/login');
+            return;
+        }
+
+        if (!user) return;
+
         fetchQuizById(quizId)
             .then(data => {
                 setQuiz(data);
-                setState("registration");
+                // Auto-set student name from authenticated user
+                setStudentName(user.name || user.email);
+                // Skip registration, go directly to playing
+                setState("playing");
             })
             .catch(err => {
                 setError(err.message);
                 setState("error");
             });
-    }, [quizId]);
+    }, [quizId, user, authLoading, router]);
 
     const handleStartQuiz = (e: React.FormEvent) => {
         e.preventDefault();
@@ -46,12 +60,13 @@ export default function QuizPlayPage() {
     const handleQuizComplete = async (answers: number[], time: number) => {
         setState("submitting");
         setTimeTaken(time);
+        setUserAnswers(answers); // Save user answers for review
 
         try {
             const result = await submitQuizAttempt({
                 quizId,
-                studentName: studentName.trim(),
-                studentId: studentId.trim() || undefined,
+                studentName: user?.name || user?.email || "Anonymous",
+                studentId: user?.email,
                 answers,
                 timeTaken: time,
             });
@@ -189,11 +204,17 @@ export default function QuizPlayPage() {
         );
     }
 
-    if (state === "results" && result) {
+    if (state === "results" && result && quiz) {
         return (
             <div className="min-h-screen pt-24 pb-16">
                 <div className="container mx-auto px-4">
-                    <QuizResults quizId={quizId} result={result} timeTaken={timeTaken} />
+                    <QuizResults
+                        quizId={quizId}
+                        result={result}
+                        timeTaken={timeTaken}
+                        quiz={quiz}
+                        userAnswers={userAnswers}
+                    />
                 </div>
             </div>
         );

@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import React from "react";
+import Image from "next/image";
 
 // Navbar Container
 export function Navbar({
@@ -79,9 +80,13 @@ export function NavbarLogo({ className }: { className?: string }) {
                 className
             )}
         >
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-sm font-bold">
-                KC
-            </div>
+            <Image
+                src="/kode-club-logo.png"
+                alt="Kode Club"
+                width={40}
+                height={40}
+                className="object-contain"
+            />
             <span className="hidden sm:inline">Kode Club</span>
         </Link>
     );
