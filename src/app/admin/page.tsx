@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { createQuiz, deleteQuiz, fetchAllHistory, fetchAllQuizzes, updateQuiz, toggleQuizStatus, fetchAllLeaderboardsAdmin, toggleLeaderboard, toggleOverallLeaderboard } from "@/lib/quiz/api";
 import { fetchAdminStats, createAnnouncement, deleteAnnouncement, toggleAnnouncement, fetchAdminAnnouncements, fetchUsers, deleteUser, type AdminStats, type Announcement, type User } from "@/lib/admin/api";
 import { useRouter } from "next/navigation";
-import { IconPlus, IconTrash, IconLoader2, IconCheck, IconPencil, IconX, IconRefresh, IconEye, IconEyeOff, IconTrophy, IconChartBar, IconCode, IconUsers, IconDatabase, IconSpeakerphone } from "@tabler/icons-react";
+import { IconPlus, IconTrash, IconLoader2, IconCheck, IconPencil, IconX, IconRefresh, IconEye, IconEyeOff, IconTrophy, IconChartBar, IconCode, IconUsers, IconDatabase, IconSpeakerphone, IconBrandGoogle, IconMail } from "@tabler/icons-react";
 import { motion } from "framer-motion";
 
 export default function AdminPage() {
@@ -851,6 +851,7 @@ export default function AdminPage() {
                                 <tr>
                                     <th className="p-4 font-medium">Name</th>
                                     <th className="p-4 font-medium">Email</th>
+                                    <th className="p-4 font-medium">Method</th>
                                     <th className="p-4 font-medium">Role</th>
                                     <th className="p-4 font-medium">IP Address</th>
                                     <th className="p-4 font-medium">Registered</th>
@@ -863,9 +864,22 @@ export default function AdminPage() {
                                         <td className="p-4 text-white">{u.name}</td>
                                         <td className="p-4 text-neutral-400">{u.email}</td>
                                         <td className="p-4">
+                                            {u.googleId ? (
+                                                <div className="flex items-center gap-2 text-white/80 bg-white/5 px-2 py-1 rounded w-fit border border-white/10">
+                                                    <IconBrandGoogle className="w-4 h-4" />
+                                                    <span className="text-xs">Google</span>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-2 text-neutral-400 bg-neutral-800 px-2 py-1 rounded w-fit border border-neutral-700">
+                                                    <IconMail className="w-4 h-4" />
+                                                    <span className="text-xs">Email</span>
+                                                </div>
+                                            )}
+                                        </td>
+                                        <td className="p-4">
                                             <span className={`px-2 py-1 rounded text-xs border ${u.role === 'admin'
-                                                    ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
-                                                    : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                                                ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
+                                                : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
                                                 }`}>
                                                 {u.role.toUpperCase()}
                                             </span>
@@ -891,7 +905,7 @@ export default function AdminPage() {
                                 ))}
                                 {users.length === 0 && (
                                     <tr>
-                                        <td colSpan={6} className="p-8 text-center text-neutral-500">
+                                        <td colSpan={7} className="p-8 text-center text-neutral-500">
                                             No users found.
                                         </td>
                                     </tr>

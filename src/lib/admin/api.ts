@@ -81,6 +81,7 @@ export interface User {
     role: string;
     createdAt: string;
     ipAddress?: string;
+    googleId?: string;
 }
 
 export const fetchUsers = async (): Promise<User[]> => {
