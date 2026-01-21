@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { createQuiz, deleteQuiz, fetchAllHistory, fetchAllQuizzes, updateQuiz, toggleQuizStatus, fetchAllLeaderboardsAdmin, toggleLeaderboard, toggleOverallLeaderboard, deleteAttempt } from "@/lib/quiz/api";
-import { fetchAdminStats, createAnnouncement, deleteAnnouncement, toggleAnnouncement, fetchAdminAnnouncements, fetchUsers, deleteUser, type AdminStats, type Announcement, type User } from "@/lib/admin/api";
+import { fetchAdminStats, createAnnouncement, deleteAnnouncement, toggleAnnouncement, fetchAdminAnnouncements, fetchUsers, deleteUser, cleanupDuplicates, type AdminStats, type Announcement, type User } from "@/lib/admin/api";
 import { useRouter } from "next/navigation";
 import { IconPlus, IconTrash, IconLoader2, IconCheck, IconPencil, IconX, IconRefresh, IconEye, IconEyeOff, IconTrophy, IconChartBar, IconCode, IconUsers, IconDatabase, IconSpeakerphone, IconBrandGoogle, IconMail } from "@tabler/icons-react";
 import { motion } from "framer-motion";
@@ -167,6 +167,17 @@ export default function AdminPage() {
             setHistory(history.filter(h => h._id !== id));
         } catch (error) {
             alert("Failed to delete attempt");
+        }
+    };
+
+    const handleCleanupDuplicates = async () => {
+        if (!confirm("Run automated cleanup? This will remove duplicate attempts for the same user/quiz, keeping only the highest score.")) return;
+        try {
+            const res = await cleanupDuplicates();
+            alert(res.message);
+            loadHistory(); // Reload to see changes
+        } catch (error) {
+            alert("Failed to cleanup duplicates");
         }
     };
 
@@ -930,7 +941,10 @@ export default function AdminPage() {
             {
                 activeTab === 'history' && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="overflow-hidden rounded-xl border border-white/10">
-                        <div className="flex justify-end p-4 bg-white/5 border-b border-white/10">
+                        <div className="flex justify-end p-4 bg-white/5 border-b border-white/10 gap-4">
+                            <button onClick={handleCleanupDuplicates} className="text-sm text-yellow-400 hover:text-yellow-300 flex items-center gap-1">
+                                <IconTrash className="w-4 h-4" /> Clean Duplicates
+                            </button>
                             <button onClick={loadHistory} className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1">
                                 <IconRefresh className="w-4 h-4" /> Refresh
                             </button>

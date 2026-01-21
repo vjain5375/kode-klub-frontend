@@ -100,3 +100,12 @@ export const deleteUser = async (id: string) => {
     if (!response.ok) throw new Error('Failed to delete user');
     return response.json();
 };
+
+export const cleanupDuplicates = async () => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/cleanup-duplicates`, {
+        method: 'POST',
+        headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Failed to cleanup duplicates');
+    return response.json();
+};
