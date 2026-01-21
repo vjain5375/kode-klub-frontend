@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { createQuiz, deleteQuiz, fetchAllHistory, fetchAllQuizzes, updateQuiz, toggleQuizStatus, fetchAllLeaderboardsAdmin, toggleLeaderboard, toggleOverallLeaderboard } from "@/lib/quiz/api";
-import { fetchAdminStats, createAnnouncement, deleteAnnouncement, toggleAnnouncement, fetchAdminAnnouncements, type AdminStats, type Announcement } from "@/lib/admin/api";
+import { fetchAdminStats, createAnnouncement, deleteAnnouncement, toggleAnnouncement, fetchAdminAnnouncements, fetchUsers, deleteUser, type AdminStats, type Announcement, type User } from "@/lib/admin/api";
 import { useRouter } from "next/navigation";
 import { IconPlus, IconTrash, IconLoader2, IconCheck, IconPencil, IconX, IconRefresh, IconEye, IconEyeOff, IconTrophy, IconChartBar, IconCode, IconUsers, IconDatabase, IconSpeakerphone } from "@tabler/icons-react";
 import { motion } from "framer-motion";
@@ -11,8 +11,9 @@ import { motion } from "framer-motion";
 export default function AdminPage() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<'dashboard' | 'create' | 'manage' | 'history' | 'leaderboards' | 'dpps'>('dashboard');
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'create' | 'manage' | 'history' | 'leaderboards' | 'dpps' | 'users'>('dashboard');
     const [loading, setLoading] = useState(false);
+    const [users, setUsers] = useState<User[]>([]);
 
     // Dashboard State
     const [stats, setStats] = useState<AdminStats | null>(null);
@@ -64,6 +65,7 @@ export default function AdminPage() {
         if (activeTab === 'history') loadHistory();
         if (activeTab === 'leaderboards') loadLeaderboards();
         if (activeTab === 'dpps') loadDpps();
+        if (activeTab === 'users') loadUsers();
     }, [activeTab, user, authLoading, router]);
 
     const loadDashboard = async () => {
@@ -136,6 +138,25 @@ export default function AdminPage() {
             console.error("Failed to load leaderboards", error);
         } finally {
             setLeaderboardLoading(false);
+        }
+    };
+
+    const loadUsers = async () => {
+        try {
+            const data = await fetchUsers();
+            setUsers(data);
+        } catch (error) {
+            console.error("Failed to load users", error);
+        }
+    };
+
+    const handleDeleteUser = async (id: string, name: string) => {
+        if (!confirm(`Are you sure you want to delete user "${name}"? This action cannot be undone.`)) return;
+        try {
+            await deleteUser(id);
+            setUsers(users.filter(u => u._id !== id));
+        } catch (error) {
+            alert("Failed to delete user");
         }
     };
 
@@ -488,7 +509,7 @@ export default function AdminPage() {
             <p className="text-neutral-400 mb-8">Manage quizzes and view student progress</p>
 
             <div className="flex gap-4 mb-8 border-b border-white/10 pb-1 overflow-x-auto">
-                {['dashboard', 'create', 'manage', 'history', 'leaderboards', 'dpps'].map((tab) => (
+                {['dashboard', 'create', 'manage', 'history', 'leaderboards', 'dpps', 'users'].map((tab) => (
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab as any)}
@@ -606,8 +627,8 @@ export default function AdminPage() {
                                 <div key={announcement._id} className="flex items-center justify-between p-4 bg-black/20 rounded-lg border border-neutral-800">
                                     <div className="flex items-center gap-4">
                                         <div className={`w-2 h-2 rounded-full ${announcement.type === 'alert' ? 'bg-red-500' :
-                                                announcement.type === 'warning' ? 'bg-yellow-500' :
-                                                    announcement.type === 'success' ? 'bg-green-500' : 'bg-blue-500'
+                                            announcement.type === 'warning' ? 'bg-yellow-500' :
+                                                announcement.type === 'success' ? 'bg-green-500' : 'bg-blue-500'
                                             }`} />
                                         <div>
                                             <p className="text-white font-medium">{announcement.message}</p>
@@ -814,299 +835,372 @@ export default function AdminPage() {
                 </motion.div>
             )}
 
-            {/* HISTORY TAB */}
-            {activeTab === 'history' && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="overflow-hidden rounded-xl border border-white/10">
-                    <div className="flex justify-end p-4 bg-white/5 border-b border-white/10">
-                        <button onClick={loadHistory} className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1">
+            {/* USERS TAB */}
+            {activeTab === 'users' && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-bold text-white">Registered Users</h2>
+                        <button onClick={loadUsers} className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1">
                             <IconRefresh className="w-4 h-4" /> Refresh
                         </button>
                     </div>
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-white/5 text-neutral-400 text-sm">
-                                <th className="p-4 font-medium border-b border-white/10">Student</th>
-                                <th className="p-4 font-medium border-b border-white/10">Quiz</th>
-                                <th className="p-4 font-medium border-b border-white/10">Score</th>
-                                <th className="p-4 font-medium border-b border-white/10 text-right">Date</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/5">
-                            {history.map((attempt) => (
-                                <tr key={attempt._id} className="hover:bg-white/5 transition-colors">
-                                    <td className="p-4">
-                                        <div className="text-white font-medium">{attempt.studentName}</div>
-                                        <div className="text-xs text-neutral-500">{attempt.studentId || attempt.userId?.email || 'Guest'}</div>
-                                    </td>
-                                    <td className="p-4 text-neutral-300">
-                                        {attempt.quizId?.title || attempt.quizId?.quizData?.quizTitle || 'Deleted Quiz'}
-                                    </td>
-                                    <td className="p-4">
-                                        <span className="px-2 py-1 rounded bg-green-500/10 text-green-400 text-sm font-bold border border-green-500/20">
-                                            {attempt.score} pts
-                                        </span>
-                                    </td>
-                                    <td className="p-4 text-right text-neutral-500 text-sm">
-                                        {new Date(attempt.createdAt).toLocaleDateString()}
-                                    </td>
+
+                    <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
+                        <table className="w-full text-left">
+                            <thead className="bg-white/5 text-neutral-400 text-sm">
+                                <tr>
+                                    <th className="p-4 font-medium">Name</th>
+                                    <th className="p-4 font-medium">Email</th>
+                                    <th className="p-4 font-medium">Role</th>
+                                    <th className="p-4 font-medium">IP Address</th>
+                                    <th className="p-4 font-medium">Registered</th>
+                                    <th className="p-4 font-medium text-right">Actions</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                    {history.length === 0 && <p className="text-neutral-500 text-center py-8">No attempts recorded yet.</p>}
+                            </thead>
+                            <tbody className="divide-y divide-white/5">
+                                {users.map((u) => (
+                                    <tr key={u._id} className="hover:bg-white/5 transition-colors">
+                                        <td className="p-4 text-white">{u.name}</td>
+                                        <td className="p-4 text-neutral-400">{u.email}</td>
+                                        <td className="p-4">
+                                            <span className={`px-2 py-1 rounded text-xs border ${u.role === 'admin'
+                                                    ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
+                                                    : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                                                }`}>
+                                                {u.role.toUpperCase()}
+                                            </span>
+                                        </td>
+                                        <td className="p-4 text-neutral-400 font-mono text-xs">
+                                            {u.ipAddress || 'Not Recorded'}
+                                        </td>
+                                        <td className="p-4 text-neutral-500 text-sm">
+                                            {new Date(u.createdAt).toLocaleDateString()}
+                                        </td>
+                                        <td className="p-4 text-right">
+                                            {u.role !== 'admin' && ( // Prevent deleting admins? Maybe allow if super admin, but for now safe
+                                                <button
+                                                    onClick={() => handleDeleteUser(u._id, u.name)}
+                                                    className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                                                    title="Delete User"
+                                                >
+                                                    <IconTrash className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                                {users.length === 0 && (
+                                    <tr>
+                                        <td colSpan={6} className="p-8 text-center text-neutral-500">
+                                            No users found.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </motion.div>
             )}
+
+            {/* HISTORY TAB */}
+            {
+                activeTab === 'history' && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="overflow-hidden rounded-xl border border-white/10">
+                        <div className="flex justify-end p-4 bg-white/5 border-b border-white/10">
+                            <button onClick={loadHistory} className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1">
+                                <IconRefresh className="w-4 h-4" /> Refresh
+                            </button>
+                        </div>
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-white/5 text-neutral-400 text-sm">
+                                    <th className="p-4 font-medium border-b border-white/10">Student</th>
+                                    <th className="p-4 font-medium border-b border-white/10">Quiz</th>
+                                    <th className="p-4 font-medium border-b border-white/10">Score</th>
+                                    <th className="p-4 font-medium border-b border-white/10 text-right">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/5">
+                                {history.map((attempt) => (
+                                    <tr key={attempt._id} className="hover:bg-white/5 transition-colors">
+                                        <td className="p-4">
+                                            <div className="text-white font-medium">{attempt.studentName}</div>
+                                            <div className="text-xs text-neutral-500">{attempt.studentId || attempt.userId?.email || 'Guest'}</div>
+                                        </td>
+                                        <td className="p-4 text-neutral-300">
+                                            {attempt.quizId?.title || attempt.quizId?.quizData?.quizTitle || 'Deleted Quiz'}
+                                        </td>
+                                        <td className="p-4">
+                                            <span className="px-2 py-1 rounded bg-green-500/10 text-green-400 text-sm font-bold border border-green-500/20">
+                                                {attempt.score} pts
+                                            </span>
+                                        </td>
+                                        <td className="p-4 text-right text-neutral-500 text-sm">
+                                            {new Date(attempt.createdAt).toLocaleDateString()}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        {history.length === 0 && <p className="text-neutral-500 text-center py-8">No attempts recorded yet.</p>}
+                    </motion.div>
+                )
+            }
 
             {/* LEADERBOARDS TAB */}
-            {activeTab === 'leaderboards' && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                            <IconTrophy className="w-6 h-6 text-yellow-400" />
-                            Leaderboard Management
-                        </h2>
-                        <button
-                            onClick={loadLeaderboards}
-                            className="flex items-center gap-2 px-4 py-2 bg-neutral-800 hover:bg-neutral-700 rounded-lg text-white transition-colors"
-                        >
-                            <IconRefresh className="w-4 h-4" />
-                            Refresh
-                        </button>
-                    </div>
-
-                    {leaderboardLoading ? (
-                        <div className="text-center py-12 text-neutral-400">
-                            <IconLoader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
-                            Loading leaderboards...
+            {
+                activeTab === 'leaderboards' && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                        <div className="flex items-center justify-between mb-6">
+                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                <IconTrophy className="w-6 h-6 text-yellow-400" />
+                                Leaderboard Management
+                            </h2>
+                            <button
+                                onClick={loadLeaderboards}
+                                className="flex items-center gap-2 px-4 py-2 bg-neutral-800 hover:bg-neutral-700 rounded-lg text-white transition-colors"
+                            >
+                                <IconRefresh className="w-4 h-4" />
+                                Refresh
+                            </button>
                         </div>
-                    ) : (
-                        <div className="space-y-6">
-                            {/* Overall Leaderboard Toggle */}
-                            <div className="p-6 rounded-xl bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/20">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 rounded-xl bg-yellow-500/20 flex items-center justify-center">
-                                            <IconChartBar className="w-6 h-6 text-yellow-400" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-lg font-bold text-white">Overall Leaderboard</h3>
-                                            <p className="text-neutral-400 text-sm">
-                                                Aggregated rankings across all quizzes (by average score)
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={handleToggleOverallLeaderboard}
-                                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${leaderboardData.showOverallLeaderboard
-                                            ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                                            : 'bg-neutral-800 text-neutral-400 border border-neutral-700'
-                                            }`}
-                                    >
-                                        {leaderboardData.showOverallLeaderboard ? (
-                                            <><IconEye className="w-4 h-4" /> Published</>
-                                        ) : (
-                                            <><IconEyeOff className="w-4 h-4" /> Hidden</>
-                                        )}
-                                    </button>
-                                </div>
+
+                        {leaderboardLoading ? (
+                            <div className="text-center py-12 text-neutral-400">
+                                <IconLoader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
+                                Loading leaderboards...
                             </div>
-
-                            {/* Quiz-wise Leaderboards */}
-                            <div className="space-y-4">
-                                <h3 className="text-lg font-semibold text-white">Quiz-wise Leaderboards</h3>
-                                {leaderboardData.quizLeaderboards.length === 0 ? (
-                                    <p className="text-neutral-500 text-center py-8">No quizzes created yet.</p>
-                                ) : (
-                                    <div className="grid gap-4">
-                                        {leaderboardData.quizLeaderboards.map((quiz) => (
-                                            <div
-                                                key={quiz.quizId}
-                                                className="p-4 rounded-xl bg-neutral-900/50 border border-neutral-800 hover:border-neutral-700 transition-colors"
-                                            >
-                                                <div className="flex items-center justify-between mb-3">
-                                                    <div>
-                                                        <h4 className="font-medium text-white">{quiz.title}</h4>
-                                                        <p className="text-sm text-neutral-500">
-                                                            {quiz.attemptCount} attempt{quiz.attemptCount !== 1 ? 's' : ''}
-                                                        </p>
-                                                    </div>
-                                                    <button
-                                                        onClick={() => handleToggleQuizLeaderboard(quiz.quizId)}
-                                                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${quiz.showLeaderboard
-                                                            ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                                                            : 'bg-neutral-800 text-neutral-400 border border-neutral-700'
-                                                            }`}
-                                                    >
-                                                        {quiz.showLeaderboard ? (
-                                                            <><IconEye className="w-3 h-3" /> Visible</>
-                                                        ) : (
-                                                            <><IconEyeOff className="w-3 h-3" /> Hidden</>
-                                                        )}
-                                                    </button>
-                                                </div>
-
-                                                {/* Top 3 Preview */}
-                                                {quiz.topAttempts.length > 0 && (
-                                                    <div className="mt-3 pt-3 border-t border-neutral-800">
-                                                        <p className="text-xs text-neutral-500 mb-2">Top 3:</p>
-                                                        <div className="flex gap-2 flex-wrap">
-                                                            {quiz.topAttempts.slice(0, 3).map((attempt: any, idx: number) => (
-                                                                <span
-                                                                    key={idx}
-                                                                    className={`text-xs px-2 py-1 rounded ${idx === 0 ? 'bg-yellow-500/20 text-yellow-400' :
-                                                                        idx === 1 ? 'bg-neutral-500/20 text-neutral-300' :
-                                                                            'bg-orange-500/20 text-orange-400'
-                                                                        }`}
-                                                                >
-                                                                    {idx + 1}. {attempt.studentName} ({attempt.score}pts)
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-                </motion.div>
-            )}
-
-            {/* DPPS TAB */}
-            {activeTab === 'dpps' && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                            <IconCode className="w-6 h-6 text-green-400" />
-                            Daily Practice Problems
-                        </h2>
-                        <button
-                            onClick={() => { setShowDppForm(true); setEditingDpp(null); setDppForm({ title: '', difficulty: 'Easy', tags: [], description: '', leetcodeUrl: '' }); }}
-                            className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-white transition-colors"
-                        >
-                            <IconPlus className="w-4 h-4" />
-                            Add DPP
-                        </button>
-                    </div>
-
-                    {/* DPP Form Modal */}
-                    {showDppForm && (
-                        <div className="p-6 rounded-xl bg-neutral-900/80 border border-neutral-800 mb-6">
-                            <h3 className="text-lg font-bold text-white mb-4">{editingDpp ? 'Edit DPP' : 'Create New DPP'}</h3>
-                            <div className="space-y-4">
-                                <input
-                                    type="text"
-                                    placeholder="Problem Title"
-                                    value={dppForm.title}
-                                    onChange={(e) => setDppForm({ ...dppForm, title: e.target.value })}
-                                    className="w-full px-4 py-3 rounded-lg bg-neutral-800 border border-neutral-700 text-white"
-                                />
-                                <div className="flex gap-4">
-                                    <select
-                                        value={dppForm.difficulty}
-                                        onChange={(e) => setDppForm({ ...dppForm, difficulty: e.target.value })}
-                                        className="px-4 py-3 rounded-lg bg-neutral-800 border border-neutral-700 text-white"
-                                    >
-                                        <option value="Easy">Easy</option>
-                                        <option value="Medium">Medium</option>
-                                        <option value="Hard">Hard</option>
-                                    </select>
-                                    <input
-                                        type="text"
-                                        placeholder="LeetCode URL (required)"
-                                        value={dppForm.leetcodeUrl}
-                                        onChange={(e) => setDppForm({ ...dppForm, leetcodeUrl: e.target.value })}
-                                        className="flex-1 px-4 py-3 rounded-lg bg-neutral-800 border border-neutral-700 text-white"
-                                    />
-                                </div>
-                                <textarea
-                                    placeholder="Problem Description (Markdown supported)"
-                                    value={dppForm.description}
-                                    onChange={(e) => setDppForm({ ...dppForm, description: e.target.value })}
-                                    rows={6}
-                                    className="w-full px-4 py-3 rounded-lg bg-neutral-800 border border-neutral-700 text-white font-mono text-sm"
-                                />
-                                <div className="flex gap-3">
-                                    <button
-                                        onClick={handleDppSubmit}
-                                        className="px-6 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg"
-                                    >
-                                        {editingDpp ? 'Update' : 'Create'} DPP
-                                    </button>
-                                    <button
-                                        onClick={() => { setShowDppForm(false); setEditingDpp(null); }}
-                                        className="px-6 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg"
-                                    >
-                                        Cancel
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* DPP List */}
-                    {dppLoading ? (
-                        <div className="text-center py-12 text-neutral-400">
-                            <IconLoader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
-                            Loading DPPs...
-                        </div>
-                    ) : dpps.length === 0 ? (
-                        <p className="text-neutral-500 text-center py-8">No DPPs created yet. Click "Add DPP" to create one.</p>
-                    ) : (
-                        <div className="space-y-3">
-                            {dpps.map((dpp) => (
-                                <div
-                                    key={dpp._id}
-                                    className="p-4 rounded-xl bg-neutral-900/50 border border-neutral-800 hover:border-neutral-700 transition-colors"
-                                >
+                        ) : (
+                            <div className="space-y-6">
+                                {/* Overall Leaderboard Toggle */}
+                                <div className="p-6 rounded-xl bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/20">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-4">
-                                            <span className={`px-2 py-1 rounded text-xs font-bold ${dpp.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400' :
-                                                dpp.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                                                    'bg-red-500/20 text-red-400'
-                                                }`}>
-                                                {dpp.difficulty}
-                                            </span>
+                                            <div className="w-12 h-12 rounded-xl bg-yellow-500/20 flex items-center justify-center">
+                                                <IconChartBar className="w-6 h-6 text-yellow-400" />
+                                            </div>
                                             <div>
-                                                <h4 className="font-medium text-white">{dpp.title}</h4>
-                                                <p className="text-xs text-neutral-500">
-                                                    {new Date(dpp.publishDate).toLocaleDateString()}
+                                                <h3 className="text-lg font-bold text-white">Overall Leaderboard</h3>
+                                                <p className="text-neutral-400 text-sm">
+                                                    Aggregated rankings across all quizzes (by average score)
                                                 </p>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                onClick={() => handleToggleDpp(dpp._id)}
-                                                className={`p-2 rounded-lg transition-colors ${dpp.isActive
-                                                    ? 'bg-green-500/20 text-green-400'
-                                                    : 'bg-neutral-700 text-neutral-400'
-                                                    }`}
-                                                title={dpp.isActive ? 'Published' : 'Hidden'}
-                                            >
-                                                {dpp.isActive ? <IconEye className="w-4 h-4" /> : <IconEyeOff className="w-4 h-4" />}
-                                            </button>
-                                            <button
-                                                onClick={() => handleEditDpp(dpp)}
-                                                className="p-2 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30"
-                                            >
-                                                <IconPencil className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeleteDpp(dpp._id)}
-                                                className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30"
-                                            >
-                                                <IconTrash className="w-4 h-4" />
-                                            </button>
-                                        </div>
+                                        <button
+                                            onClick={handleToggleOverallLeaderboard}
+                                            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${leaderboardData.showOverallLeaderboard
+                                                ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                                : 'bg-neutral-800 text-neutral-400 border border-neutral-700'
+                                                }`}
+                                        >
+                                            {leaderboardData.showOverallLeaderboard ? (
+                                                <><IconEye className="w-4 h-4" /> Published</>
+                                            ) : (
+                                                <><IconEyeOff className="w-4 h-4" /> Hidden</>
+                                            )}
+                                        </button>
                                     </div>
                                 </div>
-                            ))}
+
+                                {/* Quiz-wise Leaderboards */}
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-semibold text-white">Quiz-wise Leaderboards</h3>
+                                    {leaderboardData.quizLeaderboards.length === 0 ? (
+                                        <p className="text-neutral-500 text-center py-8">No quizzes created yet.</p>
+                                    ) : (
+                                        <div className="grid gap-4">
+                                            {leaderboardData.quizLeaderboards.map((quiz) => (
+                                                <div
+                                                    key={quiz.quizId}
+                                                    className="p-4 rounded-xl bg-neutral-900/50 border border-neutral-800 hover:border-neutral-700 transition-colors"
+                                                >
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <div>
+                                                            <h4 className="font-medium text-white">{quiz.title}</h4>
+                                                            <p className="text-sm text-neutral-500">
+                                                                {quiz.attemptCount} attempt{quiz.attemptCount !== 1 ? 's' : ''}
+                                                            </p>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => handleToggleQuizLeaderboard(quiz.quizId)}
+                                                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${quiz.showLeaderboard
+                                                                ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                                                : 'bg-neutral-800 text-neutral-400 border border-neutral-700'
+                                                                }`}
+                                                        >
+                                                            {quiz.showLeaderboard ? (
+                                                                <><IconEye className="w-3 h-3" /> Visible</>
+                                                            ) : (
+                                                                <><IconEyeOff className="w-3 h-3" /> Hidden</>
+                                                            )}
+                                                        </button>
+                                                    </div>
+
+                                                    {/* Top 3 Preview */}
+                                                    {quiz.topAttempts.length > 0 && (
+                                                        <div className="mt-3 pt-3 border-t border-neutral-800">
+                                                            <p className="text-xs text-neutral-500 mb-2">Top 3:</p>
+                                                            <div className="flex gap-2 flex-wrap">
+                                                                {quiz.topAttempts.slice(0, 3).map((attempt: any, idx: number) => (
+                                                                    <span
+                                                                        key={idx}
+                                                                        className={`text-xs px-2 py-1 rounded ${idx === 0 ? 'bg-yellow-500/20 text-yellow-400' :
+                                                                            idx === 1 ? 'bg-neutral-500/20 text-neutral-300' :
+                                                                                'bg-orange-500/20 text-orange-400'
+                                                                            }`}
+                                                                    >
+                                                                        {idx + 1}. {attempt.studentName} ({attempt.score}pts)
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </motion.div>
+                )
+            }
+
+            {/* DPPS TAB */}
+            {
+                activeTab === 'dpps' && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                        <div className="flex items-center justify-between mb-6">
+                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                <IconCode className="w-6 h-6 text-green-400" />
+                                Daily Practice Problems
+                            </h2>
+                            <button
+                                onClick={() => { setShowDppForm(true); setEditingDpp(null); setDppForm({ title: '', difficulty: 'Easy', tags: [], description: '', leetcodeUrl: '' }); }}
+                                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-white transition-colors"
+                            >
+                                <IconPlus className="w-4 h-4" />
+                                Add DPP
+                            </button>
                         </div>
-                    )}
-                </motion.div>
-            )}
-        </div>
+
+                        {/* DPP Form Modal */}
+                        {showDppForm && (
+                            <div className="p-6 rounded-xl bg-neutral-900/80 border border-neutral-800 mb-6">
+                                <h3 className="text-lg font-bold text-white mb-4">{editingDpp ? 'Edit DPP' : 'Create New DPP'}</h3>
+                                <div className="space-y-4">
+                                    <input
+                                        type="text"
+                                        placeholder="Problem Title"
+                                        value={dppForm.title}
+                                        onChange={(e) => setDppForm({ ...dppForm, title: e.target.value })}
+                                        className="w-full px-4 py-3 rounded-lg bg-neutral-800 border border-neutral-700 text-white"
+                                    />
+                                    <div className="flex gap-4">
+                                        <select
+                                            value={dppForm.difficulty}
+                                            onChange={(e) => setDppForm({ ...dppForm, difficulty: e.target.value })}
+                                            className="px-4 py-3 rounded-lg bg-neutral-800 border border-neutral-700 text-white"
+                                        >
+                                            <option value="Easy">Easy</option>
+                                            <option value="Medium">Medium</option>
+                                            <option value="Hard">Hard</option>
+                                        </select>
+                                        <input
+                                            type="text"
+                                            placeholder="LeetCode URL (required)"
+                                            value={dppForm.leetcodeUrl}
+                                            onChange={(e) => setDppForm({ ...dppForm, leetcodeUrl: e.target.value })}
+                                            className="flex-1 px-4 py-3 rounded-lg bg-neutral-800 border border-neutral-700 text-white"
+                                        />
+                                    </div>
+                                    <textarea
+                                        placeholder="Problem Description (Markdown supported)"
+                                        value={dppForm.description}
+                                        onChange={(e) => setDppForm({ ...dppForm, description: e.target.value })}
+                                        rows={6}
+                                        className="w-full px-4 py-3 rounded-lg bg-neutral-800 border border-neutral-700 text-white font-mono text-sm"
+                                    />
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={handleDppSubmit}
+                                            className="px-6 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg"
+                                        >
+                                            {editingDpp ? 'Update' : 'Create'} DPP
+                                        </button>
+                                        <button
+                                            onClick={() => { setShowDppForm(false); setEditingDpp(null); }}
+                                            className="px-6 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* DPP List */}
+                        {dppLoading ? (
+                            <div className="text-center py-12 text-neutral-400">
+                                <IconLoader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
+                                Loading DPPs...
+                            </div>
+                        ) : dpps.length === 0 ? (
+                            <p className="text-neutral-500 text-center py-8">No DPPs created yet. Click "Add DPP" to create one.</p>
+                        ) : (
+                            <div className="space-y-3">
+                                {dpps.map((dpp) => (
+                                    <div
+                                        key={dpp._id}
+                                        className="p-4 rounded-xl bg-neutral-900/50 border border-neutral-800 hover:border-neutral-700 transition-colors"
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-4">
+                                                <span className={`px-2 py-1 rounded text-xs font-bold ${dpp.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400' :
+                                                    dpp.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                                                        'bg-red-500/20 text-red-400'
+                                                    }`}>
+                                                    {dpp.difficulty}
+                                                </span>
+                                                <div>
+                                                    <h4 className="font-medium text-white">{dpp.title}</h4>
+                                                    <p className="text-xs text-neutral-500">
+                                                        {new Date(dpp.publishDate).toLocaleDateString()}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => handleToggleDpp(dpp._id)}
+                                                    className={`p-2 rounded-lg transition-colors ${dpp.isActive
+                                                        ? 'bg-green-500/20 text-green-400'
+                                                        : 'bg-neutral-700 text-neutral-400'
+                                                        }`}
+                                                    title={dpp.isActive ? 'Published' : 'Hidden'}
+                                                >
+                                                    {dpp.isActive ? <IconEye className="w-4 h-4" /> : <IconEyeOff className="w-4 h-4" />}
+                                                </button>
+                                                <button
+                                                    onClick={() => handleEditDpp(dpp)}
+                                                    className="p-2 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30"
+                                                >
+                                                    <IconPencil className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteDpp(dpp._id)}
+                                                    className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30"
+                                                >
+                                                    <IconTrash className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </motion.div>
+                )
+            }
+        </div >
     );
 }

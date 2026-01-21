@@ -73,3 +73,29 @@ export const fetchPublicAnnouncements = async (): Promise<Announcement[]> => {
     if (!response.ok) throw new Error('Failed to fetch announcements');
     return response.json();
 };
+
+export interface User {
+    _id: string;
+    name: string;
+    email: string;
+    role: string;
+    createdAt: string;
+    ipAddress?: string;
+}
+
+export const fetchUsers = async (): Promise<User[]> => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
+        headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Failed to fetch users');
+    return response.json();
+};
+
+export const deleteUser = async (id: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/users/${id}`, {
+        method: 'DELETE',
+        headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Failed to delete user');
+    return response.json();
+};
