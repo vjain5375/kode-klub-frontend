@@ -215,6 +215,25 @@ export async function fetchAllHistory(): Promise<any[]> {
 }
 
 /**
+ * Delete a specific attempt (Admin only)
+ */
+export async function deleteAttempt(id: string): Promise<void> {
+    const token = localStorage.getItem('token');
+    if (!token) throw new Error('Not authenticated');
+
+    const response = await fetch(`${API_BASE_URL}/api/attempt/${id}`, {
+        method: 'DELETE',
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to delete attempt');
+    }
+}
+
+/**
  * Check if user has already attempted a quiz
  */
 export async function checkUserAttempt(quizId: string): Promise<{

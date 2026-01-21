@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { createQuiz, deleteQuiz, fetchAllHistory, fetchAllQuizzes, updateQuiz, toggleQuizStatus, fetchAllLeaderboardsAdmin, toggleLeaderboard, toggleOverallLeaderboard } from "@/lib/quiz/api";
+import { createQuiz, deleteQuiz, fetchAllHistory, fetchAllQuizzes, updateQuiz, toggleQuizStatus, fetchAllLeaderboardsAdmin, toggleLeaderboard, toggleOverallLeaderboard, deleteAttempt } from "@/lib/quiz/api";
 import { fetchAdminStats, createAnnouncement, deleteAnnouncement, toggleAnnouncement, fetchAdminAnnouncements, fetchUsers, deleteUser, type AdminStats, type Announcement, type User } from "@/lib/admin/api";
 import { useRouter } from "next/navigation";
 import { IconPlus, IconTrash, IconLoader2, IconCheck, IconPencil, IconX, IconRefresh, IconEye, IconEyeOff, IconTrophy, IconChartBar, IconCode, IconUsers, IconDatabase, IconSpeakerphone, IconBrandGoogle, IconMail } from "@tabler/icons-react";
@@ -157,6 +157,16 @@ export default function AdminPage() {
             setUsers(users.filter(u => u._id !== id));
         } catch (error) {
             alert("Failed to delete user");
+        }
+    };
+
+    const handleDeleteAttempt = async (id: string) => {
+        if (!confirm("Are you sure you want to delete this attempt record?")) return;
+        try {
+            await deleteAttempt(id);
+            setHistory(history.filter(h => h._id !== id));
+        } catch (error) {
+            alert("Failed to delete attempt");
         }
     };
 
@@ -931,7 +941,8 @@ export default function AdminPage() {
                                     <th className="p-4 font-medium border-b border-white/10">Student</th>
                                     <th className="p-4 font-medium border-b border-white/10">Quiz</th>
                                     <th className="p-4 font-medium border-b border-white/10">Score</th>
-                                    <th className="p-4 font-medium border-b border-white/10 text-right">Date</th>
+                                    <th className="p-4 font-medium border-b border-white/10">Date</th>
+                                    <th className="p-4 font-medium border-b border-white/10 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
@@ -949,8 +960,17 @@ export default function AdminPage() {
                                                 {attempt.score} pts
                                             </span>
                                         </td>
-                                        <td className="p-4 text-right text-neutral-500 text-sm">
+                                        <td className="p-4 text-neutral-500 text-sm">
                                             {new Date(attempt.createdAt).toLocaleDateString()}
+                                        </td>
+                                        <td className="p-4 text-right">
+                                            <button
+                                                onClick={() => handleDeleteAttempt(attempt._id)}
+                                                className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                                                title="Delete Record"
+                                            >
+                                                <IconTrash className="w-4 h-4" />
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}
