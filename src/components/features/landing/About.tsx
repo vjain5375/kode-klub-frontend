@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Code2, Cpu, Users } from "lucide-react";
@@ -10,16 +11,19 @@ const features = [
         icon: <Code2 className="h-8 w-8" />,
         title: "Daily Practice",
         description: "Consistency is key. New challenges every single day.",
+        link: "/dpp"
     },
     {
         icon: <Cpu className="h-8 w-8" />,
         title: "Instant Execution",
         description: "Run code in 4+ languages with our sandboxed compiler.",
+        link: "/compiler"
     },
     {
         icon: <Users className="h-8 w-8" />,
         title: "Live Leaderboards",
         description: "Compete with peers and climb the global rankings.",
+        link: "/leaderboard"
     },
 ];
 
@@ -50,7 +54,9 @@ export function About() {
 
                 <div className="grid gap-8 md:grid-cols-3">
                     {features.map((feature, i) => (
-                        <FeatureCard key={i} feature={feature} index={i} />
+                        <Link key={i} href={feature.link} className="block h-full">
+                            <FeatureCard feature={feature} index={i} />
+                        </Link>
                     ))}
                 </div>
             </div>
@@ -67,7 +73,7 @@ function FeatureCard({ feature, index }: { feature: any; index: number }) {
             transition={{ delay: index * 0.2, duration: 0.5, ease: "easeOut" }}
             whileHover={{ y: -8, scale: 1.02 }}
             className={cn(
-                "group relative overflow-hidden rounded-2xl p-8 transition-all duration-300 cursor-pointer",
+                "group relative overflow-hidden rounded-2xl p-8 transition-all duration-300 cursor-pointer h-full",
                 // Dark glassmorphism
                 "bg-black/40 backdrop-blur-xl",
                 "border border-neutral-800",
