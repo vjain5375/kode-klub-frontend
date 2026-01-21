@@ -67,12 +67,7 @@ export default function QuizPage() {
                         Track your progress, compete with peers, and level up your coding skills.
                     </p>
 
-                    {/* Stats */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
-                        <StatCard icon={IconBrain} label="Total Quizzes" value="73" color="blue" />
-                        <StatCard icon={IconTrophy} label="Active Users" value="1.2K" color="purple" />
-                        <StatCard icon={IconClock} label="Avg. Duration" value="15 min" color="green" />
-                    </div>
+
                 </motion.div>
             </div>
 
