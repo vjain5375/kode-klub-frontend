@@ -2,11 +2,177 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { createQuiz, deleteQuiz, fetchAllHistory, fetchAllQuizzes, updateQuiz, toggleQuizStatus, fetchAllLeaderboardsAdmin, toggleLeaderboard, toggleOverallLeaderboard, deleteAttempt } from "@/lib/quiz/api";
+import { createQuiz, deleteQuiz, fetchAllHistory, fetchAllQuizzes, updateQuiz, toggleQuizStatus, fetchAllLeaderboardsAdmin, toggleLeaderboard, toggleOverallLeaderboard, deleteAttempt, fetchQuizLeaderboard } from "@/lib/quiz/api";
 import { fetchAdminStats, createAnnouncement, deleteAnnouncement, toggleAnnouncement, fetchAdminAnnouncements, fetchUsers, deleteUser, cleanupDuplicates, type AdminStats, type Announcement, type User } from "@/lib/admin/api";
 import { useRouter } from "next/navigation";
-import { IconPlus, IconTrash, IconLoader2, IconCheck, IconPencil, IconX, IconRefresh, IconEye, IconEyeOff, IconTrophy, IconChartBar, IconCode, IconUsers, IconDatabase, IconSpeakerphone, IconBrandGoogle, IconMail } from "@tabler/icons-react";
-import { motion } from "framer-motion";
+import { IconPlus, IconTrash, IconLoader2, IconCheck, IconPencil, IconX, IconRefresh, IconEye, IconEyeOff, IconTrophy, IconChartBar, IconCode, IconUsers, IconDatabase, IconSpeakerphone, IconBrandGoogle, IconMail, IconChevronDown, IconChevronUp } from "@tabler/icons-react";
+import { motion, AnimatePresence } from "framer-motion";
+
+// Leaderboard Quiz Card Component - Expandable with delete functionality
+function LeaderboardQuizCard({ quiz, onToggleVisibility, onDeleteAttempt }: {
+    quiz: {
+        quizId: string;
+        title: string;
+        showLeaderboard: boolean;
+        attemptCount: number;
+        topAttempts: Array<{
+            _id?: string;
+            studentName: string;
+            score: number;
+            timeTaken: number;
+            createdAt: string;
+        }>;
+    };
+    onToggleVisibility: (quizId: string) => void;
+    onDeleteAttempt: (attemptId: string) => Promise<void>;
+}) {
+    const [expanded, setExpanded] = useState(false);
+    const [fullLeaderboard, setFullLeaderboard] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    const loadFullLeaderboard = async () => {
+        if (expanded) {
+            setExpanded(false);
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const data = await fetchQuizLeaderboard(quiz.quizId);
+            setFullLeaderboard(data.leaderboard || []);
+            setExpanded(true);
+        } catch (error) {
+            console.error("Failed to load full leaderboard", error);
+            alert("Failed to load full leaderboard");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="rounded-xl bg-neutral-900/50 border border-neutral-800 hover:border-neutral-700 transition-colors overflow-hidden">
+            <div className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                    <div className="flex-1">
+                        <h4 className="font-medium text-white">{quiz.title}</h4>
+                        <p className="text-sm text-neutral-500">
+                            {quiz.attemptCount} attempt{quiz.attemptCount !== 1 ? 's' : ''}
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => onToggleVisibility(quiz.quizId)}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${quiz.showLeaderboard
+                                ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                : 'bg-neutral-800 text-neutral-400 border border-neutral-700'
+                                }`}
+                        >
+                            {quiz.showLeaderboard ? (
+                                <><IconEye className="w-3 h-3" /> Visible</>
+                            ) : (
+                                <><IconEyeOff className="w-3 h-3" /> Hidden</>
+                            )}
+                        </button>
+
+                        {quiz.attemptCount > 0 && (
+                            <button
+                                onClick={loadFullLeaderboard}
+                                disabled={loading}
+                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-neutral-800 text-neutral-400 border border-neutral-700 hover:bg-neutral-700 transition-all"
+                            >
+                                {loading ? (
+                                    <IconLoader2 className="w-3 h-3 animate-spin" />
+                                ) : expanded ? (
+                                    <><IconChevronUp className="w-3 h-3" /> Collapse</>
+                                ) : (
+                                    <><IconChevronDown className="w-3 h-3" /> View All</>
+                                )}
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Top 3 Preview */}
+                {!expanded && quiz.topAttempts.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-neutral-800">
+                        <p className="text-xs text-neutral-500 mb-2">Top 3:</p>
+                        <div className="flex gap-2 flex-wrap">
+                            {quiz.topAttempts.slice(0, 3).map((attempt: any, idx: number) => (
+                                <span
+                                    key={idx}
+                                    className={`text-xs px-2 py-1 rounded ${idx === 0 ? 'bg-yellow-500/20 text-yellow-400' :
+                                        idx === 1 ? 'bg-neutral-500/20 text-neutral-300' :
+                                            'bg-orange-500/20 text-orange-400'
+                                        }`}
+                                >
+                                    {idx + 1}. {attempt.studentName} ({attempt.score}pts)
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Expanded Full Leaderboard */}
+            <AnimatePresence>
+                {expanded && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="border-t border-neutral-800 bg-black/20"
+                    >
+                        <div className="p-4 max-h-96 overflow-y-auto">
+                            <h5 className="text-sm font-semibold text-white mb-3">All Leaderboard Entries ({fullLeaderboard.length})</h5>
+
+                            {fullLeaderboard.length === 0 ? (
+                                <p className="text-neutral-500 text-sm text-center py-4">No entries yet</p>
+                            ) : (
+                                <div className="space-y-2">
+                                    {fullLeaderboard.map((attempt: any, index: number) => (
+                                        <div
+                                            key={attempt._id || index}
+                                            className="flex items-center justify-between p-3 rounded-lg bg-neutral-900/50 border border-neutral-800 hover:border-neutral-700 transition-colors"
+                                        >
+                                            <div className="flex items-center gap-3 flex-1">
+                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${index === 0 ? 'bg-yellow-500/20 text-yellow-400' :
+                                                    index === 1 ? 'bg-neutral-500/20 text-neutral-300' :
+                                                        index === 2 ? 'bg-orange-500/20 text-orange-400' :
+                                                            'bg-neutral-800 text-neutral-500'
+                                                    }`}>
+                                                    #{index + 1}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className="text-white font-medium">{attempt.studentName}</p>
+                                                    {attempt.studentId && (
+                                                        <p className="text-xs text-neutral-500">{attempt.studentId}</p>
+                                                    )}
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-green-400 font-bold">{attempt.score} pts</p>
+                                                    <p className="text-xs text-neutral-500">{Math.floor(attempt.timeTaken / 60)}m {attempt.timeTaken % 60}s</p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => attempt._id && onDeleteAttempt(attempt._id)}
+                                                className="ml-3 p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                                                title="Delete this entry"
+                                            >
+                                                <IconTrash className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+}
+
 
 export default function AdminPage() {
     const { user, loading: authLoading } = useAuth();
@@ -1058,52 +1224,20 @@ export default function AdminPage() {
                                     ) : (
                                         <div className="grid gap-4">
                                             {leaderboardData.quizLeaderboards.map((quiz) => (
-                                                <div
+                                                <LeaderboardQuizCard
                                                     key={quiz.quizId}
-                                                    className="p-4 rounded-xl bg-neutral-900/50 border border-neutral-800 hover:border-neutral-700 transition-colors"
-                                                >
-                                                    <div className="flex items-center justify-between mb-3">
-                                                        <div>
-                                                            <h4 className="font-medium text-white">{quiz.title}</h4>
-                                                            <p className="text-sm text-neutral-500">
-                                                                {quiz.attemptCount} attempt{quiz.attemptCount !== 1 ? 's' : ''}
-                                                            </p>
-                                                        </div>
-                                                        <button
-                                                            onClick={() => handleToggleQuizLeaderboard(quiz.quizId)}
-                                                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${quiz.showLeaderboard
-                                                                ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                                                                : 'bg-neutral-800 text-neutral-400 border border-neutral-700'
-                                                                }`}
-                                                        >
-                                                            {quiz.showLeaderboard ? (
-                                                                <><IconEye className="w-3 h-3" /> Visible</>
-                                                            ) : (
-                                                                <><IconEyeOff className="w-3 h-3" /> Hidden</>
-                                                            )}
-                                                        </button>
-                                                    </div>
-
-                                                    {/* Top 3 Preview */}
-                                                    {quiz.topAttempts.length > 0 && (
-                                                        <div className="mt-3 pt-3 border-t border-neutral-800">
-                                                            <p className="text-xs text-neutral-500 mb-2">Top 3:</p>
-                                                            <div className="flex gap-2 flex-wrap">
-                                                                {quiz.topAttempts.slice(0, 3).map((attempt: any, idx: number) => (
-                                                                    <span
-                                                                        key={idx}
-                                                                        className={`text-xs px-2 py-1 rounded ${idx === 0 ? 'bg-yellow-500/20 text-yellow-400' :
-                                                                            idx === 1 ? 'bg-neutral-500/20 text-neutral-300' :
-                                                                                'bg-orange-500/20 text-orange-400'
-                                                                            }`}
-                                                                    >
-                                                                        {idx + 1}. {attempt.studentName} ({attempt.score}pts)
-                                                                    </span>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                    quiz={quiz}
+                                                    onToggleVisibility={handleToggleQuizLeaderboard}
+                                                    onDeleteAttempt={async (attemptId: string) => {
+                                                        if (!confirm("Delete this leaderboard entry? This cannot be undone.")) return;
+                                                        try {
+                                                            await deleteAttempt(attemptId);
+                                                            await loadLeaderboards(); // Reload to reflect changes
+                                                        } catch (error) {
+                                                            alert("Failed to delete entry");
+                                                        }
+                                                    }}
+                                                />
                                             ))}
                                         </div>
                                     )}

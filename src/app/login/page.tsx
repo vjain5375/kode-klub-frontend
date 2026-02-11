@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { motion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { IconMail, IconLock, IconLogin, IconLoader2, IconAlertCircle } from "@tabler/icons-react";
+import { IconMail, IconLock, IconLogin, IconLoader2, IconAlertCircle, IconEye, IconEyeOff } from "@tabler/icons-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -18,6 +18,7 @@ function LoginForm() {
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -125,13 +126,24 @@ function LoginForm() {
                     <div className="relative">
                         <IconLock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-500" />
                         <input
-                            type="password"
+                            type={showPassword ? "text" : "password"}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             placeholder="••••••••"
-                            className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-neutral-800/50 border border-neutral-700 text-white placeholder-neutral-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                            className="w-full pl-10 pr-12 py-2.5 rounded-lg bg-neutral-800/50 border border-neutral-700 text-white placeholder-neutral-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
                             required
                         />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 transition-colors focus:outline-none"
+                        >
+                            {showPassword ? (
+                                <IconEyeOff className="w-5 h-5" />
+                            ) : (
+                                <IconEye className="w-5 h-5" />
+                            )}
+                        </button>
                     </div>
                 </div>
 
