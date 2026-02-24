@@ -1,20 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ExecutionResponse, ExecutionStatus } from "@/types/compiler";
 
-// Piston API - Free, no API key required!
-const PISTON_API_URL = "https://emkc.org/api/v2/piston";
+// Wandbox API - Free, no API key required!
+const WANDBOX_API_URL = "https://wandbox.org/api/compile.json";
 
-// Language mapping for Piston
-const PISTON_LANGUAGES: Record<string, { language: string; version: string }> = {
-    python: { language: "python", version: "3.10.0" },
-    javascript: { language: "javascript", version: "18.15.0" },
-    typescript: { language: "typescript", version: "5.0.3" },
-    c: { language: "c", version: "10.2.0" },
-    cpp: { language: "c++", version: "10.2.0" },
-    java: { language: "java", version: "15.0.2" },
-    go: { language: "go", version: "1.16.2" },
-    rust: { language: "rust", version: "1.68.2" },
-    bash: { language: "bash", version: "5.2.0" },
+// Language mapping for Wandbox compilers
+const WANDBOX_COMPILERS: Record<string, string> = {
+    python: "cpython-3.12.7",
+    javascript: "nodejs-20.17.0",
+    typescript: "typescript-5.6.2",
+    c: "gcc-13.2.0-c",
+    cpp: "gcc-13.2.0",
+    java: "openjdk-jdk-22+36",
+    go: "go-1.23.2",
+    rust: "rust-1.82.0",
+    bash: "bash",
 };
 
 // Rate limiting
@@ -39,19 +39,17 @@ function checkRateLimit(ip: string): boolean {
     return true;
 }
 
-interface PistonResult {
-    run: {
-        stdout: string;
-        stderr: string;
-        code: number;
-        signal: string | null;
-        output: string;
-    };
-    compile?: {
-        stdout: string;
-        stderr: string;
-        code: number;
-    };
+interface WandboxResult {
+    status: string;
+    signal: string;
+    compiler_output: string;
+    compiler_error: string;
+    compiler_message: string;
+    program_output: string;
+    program_error: string;
+    program_message: string;
+    permlink: string;
+    url: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -77,8 +75,8 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const langConfig = PISTON_LANGUAGES[language];
-        if (!langConfig) {
+        const compiler = WANDBOX_COMPILERS[language];
+        if (!compiler) {
             return NextResponse.json(
                 { success: false, error: `Unsupported language: ${language}` },
                 { status: 400 }
@@ -93,54 +91,62 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Execute with Piston API
+        // Execute with Wandbox API
         const startTime = Date.now();
 
-        const pistonResponse = await fetch(`${PISTON_API_URL}/execute`, {
+        const wandboxResponse = await fetch(WANDBOX_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                language: langConfig.language,
-                version: langConfig.version,
-                files: [{ content: code }],
+                code,
+                compiler,
                 stdin: stdin || '',
-                run_timeout: 10000, // 10 seconds
             }),
         });
 
         const executionTime = Date.now() - startTime;
 
-        if (!pistonResponse.ok) {
-            const errorText = await pistonResponse.text();
-            console.error('Piston error:', errorText);
+        if (!wandboxResponse.ok) {
+            const errorText = await wandboxResponse.text();
+            console.error('Wandbox error:', wandboxResponse.status, errorText);
             return NextResponse.json(
                 { success: false, error: 'Execution service error' },
                 { status: 502 }
             );
         }
 
-        const result: PistonResult = await pistonResponse.json();
+        const result: WandboxResult = await wandboxResponse.json();
 
         // Determine status
+        const exitCode = parseInt(result.status, 10) || 0;
         let status: ExecutionStatus = 'SUCCESS';
-        if (result.compile && result.compile.code !== 0) {
-            status = 'COMPILATION_ERROR';
-        } else if (result.run.code !== 0) {
+
+        if (result.compiler_error && result.compiler_error.trim() !== '') {
+            // Check if it's a compilation error (non-zero status with compiler errors)
+            // For some languages, compiler_error contains warnings even on success
+            if (exitCode !== 0 && !result.program_output && !result.program_error) {
+                status = 'COMPILATION_ERROR';
+            }
+        }
+
+        if (status === 'SUCCESS' && exitCode !== 0) {
             status = 'RUNTIME_ERROR';
-        } else if (result.run.signal === 'SIGKILL') {
+        }
+
+        if (result.signal && result.signal === 'SIGKILL') {
             status = 'TIME_LIMIT_EXCEEDED';
         }
 
         const response: ExecutionResponse = {
             success: status === 'SUCCESS',
             data: {
-                stdout: result.run.stdout || '',
-                stderr: result.run.stderr || '',
-                exitCode: result.run.code,
+                stdout: result.program_output || '',
+                stderr: result.program_error || '',
+                exitCode,
                 executionTime,
-                memoryUsed: null, // Piston doesn't provide memory info
+                memoryUsed: null,
                 status,
-                compileOutput: result.compile?.stderr || undefined,
+                compileOutput: result.compiler_error || result.compiler_message || undefined,
             },
         };
 
